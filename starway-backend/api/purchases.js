@@ -1,25 +1,36 @@
-import { pool } from "../db/client.js";
+// api/purchases.js
+import express from 'express';
+import pool from '../db/client.js';
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
+const router = express.Router();
 
+// POST /api/purchases
+// body: { user_id, product_code, source, raw }
+router.post('/', async (req, res, next) => {
   try {
-    const { userId, courseId, price, source } = req.body;
+    const { user_id, product_code, source, raw } = req.body;
 
-    const result = await pool.query(
-      `
-      INSERT INTO purchases (user_id, course_id, price, source)
+    if (!user_id || !product_code) {
+      return res.status(400).json({ message: 'user_id і product_code обовʼязкові' });
+    }
+
+    const query = `
+      INSERT INTO purchases (user_id, product_code, source, raw_payload)
       VALUES ($1, $2, $3, $4)
-      RETURNING *
-      `,
-      [userId, courseId, price, source]
-    );
+      RETURNING *;
+    `;
 
-    res.status(200).json({ ok: true, purchase: result.rows[0] });
+    const { rows } = await pool.query(query, [
+      user_id,
+      product_code,
+      source || 'unknown',
+      raw ? JSON.stringify(raw) : null,
+    ]);
+
+    res.json(rows[0]);
   } catch (err) {
-    console.error("purchases error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    next(err);
   }
-}
+});
+
+export default router;

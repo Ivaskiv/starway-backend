@@ -1,20 +1,19 @@
-import { pool } from "../db/client.js";
+// api/lessons.js
+import express from 'express';
+import pool from '../db/client.js';
 
-export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
+const router = express.Router();
 
+// GET /api/lessons
+router.get('/', async (req, res, next) => {
   try {
-    const result = await pool.query(`
-      SELECT id, title, video_url, short_text, full_text, badge
-      FROM lessons
-      ORDER BY id ASC
-    `);
-
-    res.status(200).json({ ok: true, lessons: result.rows });
+    const { rows } = await pool.query(
+      'SELECT id, slug, title, order_index, is_free FROM lessons ORDER BY order_index'
+    );
+    res.json(rows);
   } catch (err) {
-    console.error("lessons error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    next(err);
   }
-}
+});
+
+export default router;
