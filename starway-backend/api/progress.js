@@ -1,31 +1,24 @@
 // api/progress.js
-import express from 'express';
-import pool from '../db/client.js';
+import { Router } from 'express';
+import { pool } from '../db/client.js';
 
-const router = express.Router();
+const router = Router();
 
-// POST /api/progress
-// body: { user_id, lesson_id, completed }
-router.post('/', async (req, res, next) => {
+router.post('/', async (req, res) => {
   try {
-    const { user_id, lesson_id, completed } = req.body;
+    const { user_id, product, source } = req.body;
 
-    if (!user_id || !lesson_id) {
-      return res.status(400).json({ message: 'user_id і lesson_id обовʼязкові' });
-    }
+    const result = await pool.query(
+      `INSERT INTO purchases (user_id, product, source)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [user_id, product, source]
+    );
 
-    const query = `
-      INSERT INTO progress (user_id, lesson_id, completed)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (user_id, lesson_id)
-      DO UPDATE SET completed = EXCLUDED.completed, updated_at = NOW()
-      RETURNING *;
-    `;
+    res.json(result.rows[0]);
 
-    const { rows } = await pool.query(query, [user_id, lesson_id, completed ?? true]);
-    res.json(rows[0]);
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: "server error" });
   }
 });
 

@@ -1,35 +1,24 @@
 // api/purchases.js
-import express from 'express';
-import pool from '../db/client.js';
+import { Router } from 'express';
+import { pool } from '../db/client.js';
 
-const router = express.Router();
+const router = Router();
 
-// POST /api/purchases
-// body: { user_id, product_code, source, raw }
-router.post('/', async (req, res, next) => {
+router.post('/', async (req, res) => {
   try {
-    const { user_id, product_code, source, raw } = req.body;
+    const { user_id, product, source } = req.body;
 
-    if (!user_id || !product_code) {
-      return res.status(400).json({ message: 'user_id і product_code обовʼязкові' });
-    }
+    const result = await pool.query(
+      `INSERT INTO purchases (user_id, product, source)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [user_id, product, source]
+    );
 
-    const query = `
-      INSERT INTO purchases (user_id, product_code, source, raw_payload)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
+    res.json(result.rows[0]);
 
-    const { rows } = await pool.query(query, [
-      user_id,
-      product_code,
-      source || 'unknown',
-      raw ? JSON.stringify(raw) : null,
-    ]);
-
-    res.json(rows[0]);
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: "server error" });
   }
 });
 
