@@ -2,19 +2,11 @@
   "name": "starway-backend",
   "version": "1.0.0",
   "type": "module",
-  "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "vercel dev",
+    "test": "node -e \"console.log('ok')\""
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.2",
-    "morgan": "^1.10.0",
-    "pg": "^8.13.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
+    "pg": "^8.13.1"
   }
 }
