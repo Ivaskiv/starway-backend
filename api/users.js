@@ -1,37 +1,52 @@
 // api/users.js
-import { Router } from 'express';
-import { pool } from '../db/client.js';
+import { Router } from "express";
+import {
+  getUserByTelegramId,
+  getUserByEmail,
+  createTelegramUser,
+  createEmailUser,
+  validatePassword
+} from "../models/users.js";
 
 const router = Router();
 
-// POST /api/users — створити або повернути user
-router.post('/', async (req, res) => {
-  try {
-    const { tg_id, email, name } = req.body;
+router.get("/telegram/:tgId", async (req, res) => {
+  const tgId = req.params.tgId;
+  const user = await getUserByTelegramId(tgId);
+  res.json(user || null);
+});
 
-    if (!tg_id) return res.status(400).json({ error: "tg_id required" });
+router.post("/create-telegram", async (req, res) => {
+  const { telegram_id, telegram_username, name, source } = req.body;
 
-    const existing = await pool.query(
-      `SELECT * FROM users WHERE tg_id = $1`,
-      [tg_id]
-    );
+  const user = await createTelegramUser({
+    telegram_id,
+    telegram_username,
+    name,
+    source
+  });
 
-    if (existing.rows.length > 0) {
-      return res.json(existing.rows[0]);
-    }
+  res.json(user);
+});
 
-    const result = await pool.query(
-      `INSERT INTO users (tg_id, email, name)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [tg_id, email, name]
-    );
+router.post("/create-email", async (req, res) => {
+  const { name, email, password } = req.body;
 
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "server error" });
-  }
+  const exists = await getUserByEmail(email);
+  if (exists) return res.status(409).json({ error: "Email exists" });
+
+  const user = await createEmailUser({ name, email, password });
+  res.json(user);
+});
+
+router.post("/check-password", async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await getUserByEmail(email);
+  if (!user) return res.json({ ok: false });
+
+  const valid = await validatePassword(user, password);
+  res.json({ ok: valid, user: valid ? user : null });
 });
 
 export default router;

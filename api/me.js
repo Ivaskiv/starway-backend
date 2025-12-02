@@ -1,59 +1,18 @@
 // api/me.js
-import express from 'express';
-import pool from '../db/client.js';
+import { verifyJwt } from "../../utils/jwt.js";
+import { sql } from "../../db/client.js";
 
-const router = express.Router();
-
-router.get('/me', async (req, res) => {
+export default async function (req, res) {
   try {
-    const tgId = req.query.tg_id; // або з токена, або з headers
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ error: "Missing token" });
 
-    if (!tgId) {
-      return res.status(400).json({ error: 'tg_id is required' });
-    }
+    const token = auth.replace("Bearer ", "");
+    const { userId } = verifyJwt(token);
 
-    // 1) юзер
-    const userResult = await pool.query(
-      'SELECT * FROM users WHERE telegram_id = $1 LIMIT 1',
-      [tgId]
-    );
-    const user = userResult.rows[0];
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // 2) всі miniapps
-    const miniappsRes = await pool.query('SELECT * FROM miniapps ORDER BY id');
-    const miniapps = miniappsRes.rows;
-
-    // 3) покупки
-    const purchasesRes = await pool.query(
-      'SELECT miniapp_id FROM purchases WHERE user_id = $1',
-      [user.id]
-    );
-    const purchasedIds = purchasesRes.rows.map(r => r.miniapp_id);
-
-    // 4) прогрес
-    const progressRes = await pool.query(
-      `SELECT miniapp_id, lesson_id, completed
-       FROM progress
-       WHERE user_id = $1`,
-      [user.id]
-    );
-
-    res.json({
-      user,
-      miniapps: miniapps.map(app => ({
-        ...app,
-        is_unlocked: app.is_free || purchasedIds.includes(app.id),
-      })),
-      progress: progressRes.rows,
-    });
+    const rows = await sql`SELECT * FROM users WHERE id = ${userId} LIMIT 1`;
+    res.json({ user: rows[0] });
   } catch (err) {
-    console.error('GET /me error', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(401).json({ error: "Invalid token" });
   }
-});
-
-export default router;
+}

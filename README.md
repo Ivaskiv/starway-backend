@@ -66,3 +66,15 @@ Add to Vercel environment variables:
 | /api/miniapp | POST   | parse miniapp parameter |
 | /api/tilda   | POST   | parse tilda parameter   |
 
+Backend 2.0
+✔ Telegram Login (перевірка хешу Telegram)
+✔ Email Login (bcrypt + JWT)
+✔ Refresh токени (власна таблиця refresh_tokens)
+✔ WayForPay payments → enrollments
+✔ Miniapps + Products + Lessons Engine
+✔ Progress Engine (locked/open/completed)
+✔ Cabinet API (всі продукти юзера + статуси + прогрес)
+✔ Answers Engine (відправка Д/З у курсах)
+✔ Webhook для SendPulse/Tilda
+✔ Health-check /api/ping
+✔ Unification + Clean Architecture

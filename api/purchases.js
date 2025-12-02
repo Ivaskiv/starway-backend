@@ -1,6 +1,6 @@
 // api/purchases.js
 import { Router } from 'express';
-import { pool } from '../db/client.js';
+import  pool  from '../db/client.js';
 
 const router = Router();
 

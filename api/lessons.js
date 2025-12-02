@@ -1,53 +1,65 @@
 // api/lessons.js
-import { Router } from 'express';
+import { Router } from "express";
+import { verifyJwt } from "../utils/jwt.js";
+import {
+  getProductBySlug,
+  getLessonsByProduct,
+  getUserLessonProgress,
+  hasActiveEnrollment
+} from "../models/lessons.js";
+import { sql } from "../db/client.js";
 
 const router = Router();
 
-const lessons = [
-  {
-    id: 1,
-    title: "Крок 1. Твій базовий стан",
-    video: "https://youtu.be/Tkx-7Dhg0pQ?si=dmMx9HlJkfDxlSIz",
-    task: [
-      "1. Як я насправді живу зараз?",
-      "2. З якого стану я приймаю рішення?",
-      "3. Де я найбільше застрягла?"
-    ]
-  },
-  {
-    id: 2,
-    title: "Урок 2. Бачення без чужих шаблонів",
-    video: "https://youtu.be/dyeFBWIrHKw?si=V52NljYjzqC-X3Ow",
-    task: ["..."]
-  },
-  {
-    id: 3,
-    title: "Урок 3. Бачення без чужих шаблонів",
-    video: "https://youtu.be/dyeFBWIrHKw?si=V52NljYjzqC-X3Ow",
-    task: ["..."]
-  },
-  {
-    id: 4,
-    title: "Урок 4. Бачення без чужих шаблонів",
-    video: "https://youtu.be/dyeFBWIrHKw?si=V52NljYjzqC-X3Ow",
-    task: ["..."]
-  },
-  {
-    id: 5,
-    title: "Урок 5. Бачення без чужих шаблонів",
-    video: "https://youtu.be/dyeFBWIrHKw?si=V52NljYjzqC-X3Ow",
-    task: ["..."]
-  },
-  {
-    id: 6,
-    title: "Урок 6. Бачення без чужих шаблонів",
-    video: "https://youtu.be/dyeFBWIrHKw?si=V52NljYjzqC-X3Ow",
-    task: ["..."]
-  }
-];
+router.get("/", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const { userId } = verifyJwt(token);
 
-router.get('/', (req, res) => {
-  res.json(lessons);
+    const productSlug = req.query.product;
+    if (!productSlug) return res.status(400).json({ error: "product slug required" });
+
+    const product = await getProductBySlug(productSlug);
+    if (!product) return res.status(404).json({ error: "product not found" });
+
+    const lessons = await getLessonsByProduct(product.id);
+    const progress = await getUserLessonProgress(userId, product.id);
+    const access = await hasActiveEnrollment(userId, product.id);
+
+    const list = lessons.map(lesson => {
+      const p = progress.find(r => r.lesson_id === lesson.id);
+
+      let status = "locked";
+      if (lesson.is_free) status = "open";
+      if (access) status = "open";
+      if (p?.completed) status = "completed";
+      if (p?.status === "open") status = "open";
+
+      return {
+        id: lesson.id,
+        title: lesson.title,
+        video: lesson.video_url,
+        short_text: lesson.short_text,
+        full_text: lesson.full_text,
+        tasks: lesson.tasks,
+        lesson_number: lesson.lesson_number,
+        is_free: lesson.is_free,
+        status
+      };
+    });
+
+    res.json({
+      product: {
+        id: product.id,
+        slug: product.slug,
+        title: product.title
+      },
+      lessons: list
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: "server error" });
+  }
 });
 
 export default router;
