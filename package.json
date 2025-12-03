@@ -1,6 +1,6 @@
 {
   "name": "starway-backend",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
@@ -15,6 +15,10 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
     "pg": "^8.16.3",
+    "serverless-http": "^3.2.0",
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
   }
 }

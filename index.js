@@ -5,15 +5,13 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 dotenv.config();
 
-import serverless from "serverless-http";
-
 // AUTH
 import login from "./auth/login.js";
 import register from "./auth/register.js";
 import refresh from "./auth/refresh.js";
 import logout from "./auth/logout.js";
 import telegramLogin from "./auth/telegram-login.js";
-import telegramAuto from "./auth/telegram.js"; // <── НОВИЙ ПРАВИЛЬНИЙ
+import telegramAuto from "./auth/telegram.js";
 
 // UTILS
 import { authRequired } from "./utils/auth-required.js";
@@ -35,7 +33,17 @@ import webhookRouter from "./api/webhook.js";
 
 const app = express();
 
-app.use(cors());
+// CORS Configuration
+app.use(cors({
+  origin: [
+    'https://star-way.pro',
+    'https://www.star-way.pro',
+    'http://localhost:3000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
+
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("dev"));
 
@@ -47,8 +55,8 @@ app.post("/auth/register", register);
 app.post("/auth/refresh", refresh);
 app.post("/auth/logout", logout);
 
-app.post("/auth/telegram-login", telegramLogin);  // WebApp + Telegram Login Widget
-app.post("/auth/telegram", telegramAuto);         // Tilda + WayForPay auto-login
+app.post("/auth/telegram-login", telegramLogin);
+app.post("/auth/telegram", telegramAuto);
 
 /* =====================
      PUBLIC API
@@ -76,14 +84,19 @@ app.use("/api/enrollments", authRequired, enrollmentsRouter);
          ROOT
 ===================== */
 app.get("/", (req, res) => {
-  res.send("🌟 Starway Backend 3.0 (Vercel) is running");
+  res.json({
+    name: "🌟 Starway Backend",
+    version: "3.0",
+    status: "running",
+    timestamp: new Date().toISOString()
+  });
 });
 
 /* =====================
      404 + ERROR
 ===================== */
 app.use((req, res) => {
-  res.status(404).json({ error: "route_not_found" });
+  res.status(404).json({ error: "route_not_found", path: req.path });
 });
 
 app.use((err, req, res, next) => {
@@ -92,6 +105,16 @@ app.use((err, req, res, next) => {
 });
 
 /* =====================
+     LOCAL DEV
+===================== */
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}
+
+/* =====================
      EXPORT FOR VERCEL
 ===================== */
-export default serverless(app);
+export default app;
