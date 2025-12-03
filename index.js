@@ -1,8 +1,11 @@
+// index.js
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
 dotenv.config();
+
+import serverless from "serverless-http";
 
 // AUTH
 import login from "./auth/login.js";
@@ -10,6 +13,7 @@ import register from "./auth/register.js";
 import refresh from "./auth/refresh.js";
 import logout from "./auth/logout.js";
 import telegramLogin from "./auth/telegram-login.js";
+import telegramAuto from "./auth/telegram.js"; // <── НОВИЙ ПРАВИЛЬНИЙ
 
 // UTILS
 import { authRequired } from "./utils/auth-required.js";
@@ -30,46 +34,36 @@ import pingRouter from "./api/ping.js";
 import webhookRouter from "./api/webhook.js";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("dev"));
 
-
-// =======================
-// AUTH BLOCK (не вимагає токена)
-// =======================
-
+/* =====================
+      AUTH (public)
+===================== */
 app.post("/auth/login", login);
 app.post("/auth/register", register);
 app.post("/auth/refresh", refresh);
 app.post("/auth/logout", logout);
-app.post("/auth/telegram", telegramLogin);
 
+app.post("/auth/telegram-login", telegramLogin);  // WebApp + Telegram Login Widget
+app.post("/auth/telegram", telegramAuto);         // Tilda + WayForPay auto-login
 
-// =======================
-// PAYMENTS / WEBHOOKS
-// =======================
+/* =====================
+     PUBLIC API
+===================== */
+app.use("/api/ping", pingRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/lessons", lessonsRouter);
+app.use("/api/miniapps", miniappsRouter);
 
 app.use("/api/payments/wayforpay", paymentsWayForPay);
 app.use("/api/webhook", webhookRouter);
 
-
-// =======================
-// PUBLIC (не потрібно токена)
-// =======================
-
-app.use("/api/ping", pingRouter);
-app.use("/api/users", usersRouter);
-app.use("/api/miniapps", miniappsRouter);
-app.use("/api/lessons", lessonsRouter);
-
-
-// =======================
-// SECURED BLOCK (потрібен JWT)
-// =======================
-
+/* =====================
+     SECURED API
+===================== */
 app.use("/api/me", authRequired, meRouter);
 app.use("/api/cabinet", authRequired, cabinetRouter);
 app.use("/api/progress", authRequired, progressRouter);
@@ -78,15 +72,16 @@ app.use("/api/purchases", authRequired, purchasesRouter);
 app.use("/api/products", authRequired, productsRouter);
 app.use("/api/enrollments", authRequired, enrollmentsRouter);
 
-
-// =======================
-// ROOT + ERRORS
-// =======================
-
+/* =====================
+         ROOT
+===================== */
 app.get("/", (req, res) => {
-  res.send("🌟 Starway Backend 2.0 is running");
+  res.send("🌟 Starway Backend 3.0 (Vercel) is running");
 });
 
+/* =====================
+     404 + ERROR
+===================== */
 app.use((req, res) => {
   res.status(404).json({ error: "route_not_found" });
 });
@@ -96,6 +91,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "server_error", message: err.message });
 });
 
-// app.listen(PORT, () => console.log(`🚀 Backend running on :${PORT}`));
-
-export default app;
+/* =====================
+     EXPORT FOR VERCEL
+===================== */
+export default serverless(app);
