@@ -96,6 +96,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "server_error", message: err.message });
 });
 
-app.listen(PORT, () => console.log(`🚀 Backend running on :${PORT}`));
+// app.listen(PORT, () => console.log(`🚀 Backend running on :${PORT}`));
 
 export default app;
