@@ -1,61 +1,56 @@
 // api/miniapps.js
 import express from 'express';
-import pool from '../db/client.js';
+import { sql } from '../db/client.js';
 
 const router = express.Router();
 
-// Маніфест — опис продукту + уроки
-router.get('/miniapps/:slug/manifest', async (req, res) => {
+router.get('/:slug/manifest', async (req, res) => {
   try {
     const { slug } = req.params;
-    const tgId = req.query.tg_id; // хто відкрив
+    const tgId = req.query.tg_id;
 
-    const miniappRes = await pool.query(
-      'SELECT * FROM miniapps WHERE slug = $1 LIMIT 1',
-      [slug]
-    );
-    const miniapp = miniappRes.rows[0];
+    const miniappRows = await sql`
+      SELECT * FROM miniapps WHERE slug = ${slug} LIMIT 1
+    `;
+    const miniapp = miniappRows[0];
 
     if (!miniapp) {
       return res.status(404).json({ error: 'Miniapp not found' });
     }
 
-    // Уроки
-    const lessonsRes = await pool.query(
-      `SELECT id, title, badge, video_url, short_text, full_text, task, order_index
-       FROM lessons
-       WHERE miniapp_id = $1
-       ORDER BY order_index ASC`,
-      [miniapp.id]
-    );
+    const lessons = await sql`
+      SELECT id, title, video_url, short_text, full_text, tasks, order_index
+      FROM lessons
+      WHERE miniapp_id = ${miniapp.id}
+      ORDER BY order_index ASC
+    `;
 
     let progress = [];
+
     if (tgId) {
-      const userRes = await pool.query(
-        'SELECT id FROM users WHERE telegram_id = $1 LIMIT 1',
-        [tgId]
-      );
-      const user = userRes.rows[0];
+      const userRows = await sql`
+        SELECT id FROM users WHERE telegram_id = ${tgId} LIMIT 1
+      `;
+      const user = userRows[0];
 
       if (user) {
-        const progRes = await pool.query(
-          `SELECT lesson_id, completed
-           FROM progress
-           WHERE user_id = $1 AND miniapp_id = $2`,
-          [user.id, miniapp.id]
-        );
-        progress = progRes.rows;
+        progress = await sql`
+          SELECT lesson_id, completed
+          FROM progress
+          WHERE user_id = ${user.id} AND miniapp_id = ${miniapp.id}
+        `;
       }
     }
 
     res.json({
       miniapp,
-      lessons: lessonsRes.rows,
-      progress,
+      lessons,
+      progress
     });
+
   } catch (err) {
-    console.error('GET /miniapps/:slug/manifest error', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("GET /miniapps/:slug/manifest error", err);
+    res.status(500).json({ error: "Internal error" });
   }
 });
 

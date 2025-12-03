@@ -1,5 +1,5 @@
 import { sql } from "../db/client.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export async function getUserById(id) {
   const rows = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`;

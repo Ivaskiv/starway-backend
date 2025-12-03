@@ -1,6 +1,5 @@
 //api/lessons-single.js
 import { Router } from "express";
-import { verifyJwt } from "../utils/jwt.js";
 import { getLessonById } from "../models/lessons.js";
 
 const router = Router();

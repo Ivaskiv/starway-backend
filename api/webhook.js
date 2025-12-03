@@ -1,7 +1,7 @@
 // api/webhook.js
 // api/webhook.js
 import express from 'express';
-import pool from '../db/client.js';
+import { sql } from '../db/client.js';
 
 const router = express.Router();
 

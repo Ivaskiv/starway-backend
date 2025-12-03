@@ -1,6 +1,5 @@
 // api/answers.js
 import { Router } from "express";
-import { verifyJwt } from "../utils/jwt.js";
 import { getLessonById } from "../models/lessons.js";
 import { sql } from "../db/client.js";
 
@@ -8,7 +7,6 @@ const router = Router();
 
 router.post("/", async (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  const { userId } = verifyJwt(token);
 
   const { lesson_id, text } = req.body;
   if (!lesson_id || !text) return res.json({ error: "missing fields" });

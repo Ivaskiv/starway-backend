@@ -1,33 +1,56 @@
-import express from "express";
-import { verifyJwt } from "../utils/jwt.js";
-import { createEnrollment } from "../models/enrollments.js";
+// api/enrollments.js
+import { Router } from "express";
+import { getEnrollment, createEnrollment } from "../models/enrollments.js";
 import { getProductBySlug } from "../models/products.js";
+import { getUserByTelegramId } from "../models/users.js";
 
-const router = express.Router();
+const router = Router();
 
 router.post("/", async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    const { userId } = verifyJwt(token);
+    const { telegram_id, product_slug, pay_ref, amount, currency, pay_source } = req.body;
 
-    const { product_slug, pay_source, pay_ref, expires_at } = req.body;
+    const user = await getUserByTelegramId(telegram_id);
+    if (!user) return res.status(404).json({ error: "user_not_found" });
 
     const product = await getProductBySlug(product_slug);
-    if (!product) return res.json({ error: "Product not found" });
+    if (!product) return res.status(404).json({ error: "product_not_found" });
 
     const enrollment = await createEnrollment({
-      user_id: userId,
+      user_id: user.id,
       product_id: product.id,
-      pay_source,
+      pay_source: pay_source || "manual",
       pay_ref,
-      expires_at
+      amount,
+      currency,
+      expires_at: null
     });
 
     res.json({ ok: true, enrollment });
 
   } catch (err) {
-    console.error(err);
-    res.json({ error: "Server error" });
+    console.error("POST /enrollments error:", err);
+    res.status(500).json({ error: "server_error" });
+  }
+});
+
+router.get("/:telegram_id/:product_slug", async (req, res) => {
+  try {
+    const { telegram_id, product_slug } = req.params;
+
+    const user = await getUserByTelegramId(telegram_id);
+    if (!user) return res.status(404).json({ error: "user_not_found" });
+
+    const product = await getProductBySlug(product_slug);
+    if (!product) return res.status(404).json({ error: "product_not_found" });
+
+    const enrollment = await getEnrollment(user.id, product.id);
+
+    res.json(enrollment || null);
+
+  } catch (err) {
+    console.error("GET /enrollments error:", err);
+    res.status(500).json({ error: "server_error" });
   }
 });
 

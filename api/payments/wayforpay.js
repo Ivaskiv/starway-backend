@@ -3,7 +3,7 @@
 import { Router } from "express";
 import { getUserByTelegramId } from "../../models/users.js";
 import { getProductBySlug } from "../../models/products.js";
-import { createOrUpdateEnrollment } from "../../models/enrollments.js";
+import { createEnrollment } from "../../models/enrollments.js";
 import { logPayment } from "../../models/payments.js";
 
 const router = Router();
@@ -27,7 +27,7 @@ router.post("/", async (req, res) => {
     const product = await getProductBySlug(productSlug);
     if (!product) return res.json({ ok: false });
 
-    await createOrUpdateEnrollment({
+    await createEnrollment({
       user_id: user.id,
       product_id: product.id,
       pay_source: "wayforpay",

@@ -1,6 +1,5 @@
 // api/progress.js
 import { Router } from "express";
-import { verifyJwt } from "../utils/jwt.js";
 import { getLessonById } from "../models/lessons.js";
 import {
   setWatched,
@@ -13,7 +12,6 @@ const router = Router();
 
 router.post("/watch", async (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  const { userId } = verifyJwt(token);
   const { lesson_id } = req.body;
 
   const lesson = await getLessonById(lesson_id);
@@ -25,7 +23,6 @@ router.post("/watch", async (req, res) => {
 
 router.post("/complete", async (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  const { userId } = verifyJwt(token);
   const { lesson_id } = req.body;
 
   const lesson = await getLessonById(lesson_id);

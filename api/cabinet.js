@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { verifyJwt } from "../utils/jwt.js";
 import {
   getUser,
   getProducts,
@@ -20,7 +19,6 @@ const router = Router();
 router.get("/", async (req, res) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    const { userId } = verifyJwt(token);
 
     const user = await getUser(userId);
     if (!user) return res.status(404).json({ error: "user not found" });

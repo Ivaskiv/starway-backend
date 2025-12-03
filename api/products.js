@@ -1,5 +1,4 @@
 import express from "express";
-import { verifyJwt } from "../utils/jwt.js";
 import { getUserProducts } from "../models/products.js";
 
 const router = express.Router();
@@ -7,7 +6,6 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    const { userId } = verifyJwt(token);
 
     const products = await getUserProducts(userId);
 
