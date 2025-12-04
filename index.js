@@ -11,8 +11,7 @@ import login from "./auth/login.js";
 import register from "./auth/register.js";
 import refresh from "./auth/refresh.js";
 import logout from "./auth/logout.js";
-import telegram from "./auth/telegram.js";
-import telegramAuto from "./auth/telegram.js";
+import telegram from "./auth/telegram.js"; 
 
 // UTILS
 import { authRequired } from "./utils/auth-required.js";
@@ -51,15 +50,11 @@ app.use(morgan("dev"));
 /* =====================
       AUTH (public)
 ===================== */
-// ВАЖЛИВО: використовуємо роутер, а не функцію handler!
 app.use("/auth/login", login);
 app.use("/auth/register", register);
 app.use("/auth/refresh", refresh);
 app.use("/auth/logout", logout);
-app.use("/auth/telegram-login", telegram);
-
-// Для telegram.js потрібен wrapper
-app.post("/auth/telegram", telegramAuto);
+app.use("/auth/telegram", telegram);
 
 /* =====================
      PUBLIC API
