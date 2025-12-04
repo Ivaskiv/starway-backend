@@ -1,7 +1,7 @@
 // auth/logout.js
 
 import { Router } from "express";
-import { deleteRefreshToken } from "../models/auth.js";
+import { deleteRefreshToken } from "../../models/auth.js";
 
 const router = Router();
 

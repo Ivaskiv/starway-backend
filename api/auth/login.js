@@ -1,8 +1,8 @@
 // auth/login.js
 import { Router } from "express";
-import { getUserByEmail, validatePassword } from "../models/users.js";
-import { signAccess, signRefresh } from "../utils/jwt.js";
-import { storeRefreshToken } from "../models/auth.js";
+import { getUserByEmail, validatePassword } from "../../models/users.js";
+import { signAccess, signRefresh } from "../../utils/jwt.js";
+import { storeRefreshToken } from "../../models/auth.js";
 
 const router = Router();
 

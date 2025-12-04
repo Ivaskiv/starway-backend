@@ -7,11 +7,11 @@ import cors from "cors";
 import morgan from "morgan";
 
 // AUTH - імпорти
-import login from "../auth/login.js";
-import register from "../auth/register.js";
-import refresh from "../auth/refresh.js";
-import logout from "../auth/logout.js";
-import telegram from "../auth/telegram.js"; 
+import login from "./auth/login.js";
+import register from "./auth/register.js";
+import refresh from "./auth/refresh.js";
+import logout from "./auth/logout.js";
+import telegram from "./auth/telegram.js"; 
 
 // UTILS
 import { authRequired } from "../utils/auth-required.js";
