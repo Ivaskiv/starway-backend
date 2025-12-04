@@ -17,19 +17,19 @@ import telegram from "../auth/telegram.js";
 import { authRequired } from "../utils/auth-required.js";
 
 // API ROUTERS
-import usersRouter from "./users.js";
-import lessonsRouter from "./lessons.js";
-import progressRouter from "./progress.js";
-import answersRouter from "./answers.js";
-import purchasesRouter from "./purchases.js";
-import miniappsRouter from "./miniapps.js";
-import cabinetRouter from "./cabinet.js";
-import productsRouter from "./products.js";
-import enrollmentsRouter from "./enrollments.js";
-import paymentsWayForPay from "./payments/wayforpay.js";
-import pingRouter from "./ping.js";
-import webhookRouter from "./webhook.js";
-import meRouter from "./me.js"; 
+import usersRouter from "../routes/users.js";
+import lessonsRouter from "../routes/lessons.js";
+import progressRouter from "../routes/progress.js";
+import answersRouter from "../routes/answers.js";
+import purchasesRouter from "../routes/purchases.js";
+import miniappsRouter from "../routes/miniapps.js";
+import cabinetRouter from "../routes/cabinet.js";
+import productsRouter from "../routes/products.js";
+import enrollmentsRouter from "../routes/enrollments.js";
+import paymentsWayForPay from "../routes/payments/wayforpay.js";
+import pingRouter from "../routes/ping.js";
+import webhookRouter from "../routes/webhook.js";
+import meRouter from "../routes/me.js"; 
 
 const app = express();
 
