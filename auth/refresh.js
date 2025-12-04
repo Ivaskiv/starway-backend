@@ -1,8 +1,8 @@
 // api/auth/refresh.js
 import { Router } from "express";
 import jwt from "jsonwebtoken";
-import { storeRefreshToken } from "../../models/auth.js";
-import { signAccess } from "../../utils/jwt.js";
+import { storeRefreshToken } from "../models/auth.js";
+import { signAccess } from "../utils/jwt.js";
 
 const router = Router();
 
