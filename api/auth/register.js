@@ -1,8 +1,8 @@
 // api/auth/register.js
 import { Router } from "express";
-import { getUserByEmail, createEmailUser } from "../../models/users.js";
-import { signAccess, signRefresh } from "../../utils/jwt.js";
-import { storeRefreshToken } from "../../models/auth.js";
+import { getUserByEmail, createEmailUser } from "../models/users.js";
+import { signAccess, signRefresh } from "../utils/jwt.js";
+import { storeRefreshToken } from "../models/auth.js";
 
 const router = Router();
 
@@ -26,13 +26,7 @@ router.post("/", async (req, res) => {
 
     await storeRefreshToken(user.id, refresh);
 
-    return res.json({
-      ok: true,
-      access,
-      refresh,
-      userId: user.id
-    });
-
+    res.json({ ok: true, access, refresh, userId: user.id });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
     res.status(500).json({ error: "server_error" });

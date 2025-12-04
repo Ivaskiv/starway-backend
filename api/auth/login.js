@@ -1,40 +1,37 @@
 // api/auth/login.js
 import { Router } from "express";
-import { getUserByEmail, createEmailUser } from "../../models/users.js";
-import { signAccess, signRefresh } from "../../utils/jwt.js";
-import { storeRefreshToken } from "../../models/auth.js";
+import { getUserByEmail, validatePassword } from "../models/users.js";
+import { signAccess, signRefresh } from "../utils/jwt.js";
+import { storeRefreshToken } from "../models/auth.js";
 
 const router = Router();
 
 router.post("/", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (!email || !password) {
       return res.status(400).json({ error: "missing_fields" });
     }
 
-    const exists = await getUserByEmail(email);
-    if (exists) {
-      return res.status(400).json({ error: "email_exists" });
+    const user = await getUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({ error: "invalid" });
     }
 
-    const user = await createEmailUser({ name, email, password });
+    const ok = await validatePassword(user, password);
+    if (!ok) {
+      return res.status(401).json({ error: "invalid" });
+    }
 
     const access = signAccess(user.id);
     const refresh = signRefresh(user.id);
 
     await storeRefreshToken(user.id, refresh);
 
-    return res.json({
-      ok: true,
-      access,
-      refresh,
-      userId: user.id
-    });
-
+    res.json({ access, refresh, userId: user.id });
   } catch (err) {
-    console.error("REGISTER ERROR:", err);
+    console.error("LOGIN ERROR:", err);
     res.status(500).json({ error: "server_error" });
   }
 });
