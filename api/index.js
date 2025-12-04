@@ -1,4 +1,4 @@
-// index.js
+// api/index.js
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -6,30 +6,30 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 
-// AUTH - імпорти
-import login from "./auth/login.js";
-import register from "./auth/register.js";
-import refresh from "./auth/refresh.js";
-import logout from "./auth/logout.js";
-import telegram from "./auth/telegram.js"; 
+// AUTH - імпорти (тепер на рівень вище)
+import login from "../auth/login.js";
+import register from "../auth/register.js";
+import refresh from "../auth/refresh.js";
+import logout from "../auth/logout.js";
+import telegram from "../auth/telegram.js"; 
 
 // UTILS
-import { authRequired } from "./utils/auth-required.js";
+import { authRequired } from "../utils/auth-required.js";
 
-// API
-import usersRouter from "./api/users.js";
-import lessonsRouter from "./api/lessons.js";
-import progressRouter from "./api/progress.js";
-import answersRouter from "./api/answers.js";
-import purchasesRouter from "./api/purchases.js";
-import miniappsRouter from "./api/miniapps.js";
-import meRouter from "./api/me.js";
-import cabinetRouter from "./api/cabinet.js";
-import productsRouter from "./api/products.js";
-import enrollmentsRouter from "./api/enrollments.js";
-import paymentsWayForPay from "./api/payments/wayforpay.js";
-import pingRouter from "./api/ping.js";
-import webhookRouter from "./api/webhook.js";
+// API (тепер на рівень вище)
+import usersRouter from "./users.js";
+import lessonsRouter from "./lessons.js";
+import progressRouter from "./progress.js";
+import answersRouter from "./answers.js";
+import purchasesRouter from "./purchases.js";
+import miniappsRouter from "./miniapps.js";
+import meRouter from "./me.js";
+import cabinetRouter from "./cabinet.js";
+import productsRouter from "./products.js";
+import enrollmentsRouter from "./enrollments.js";
+import paymentsWayForPay from "./payments/wayforpay.js";
+import pingRouter from "./ping.js";
+import webhookRouter from "./webhook.js";
 
 const app = express();
 

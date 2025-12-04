@@ -2,10 +2,11 @@
   "name": "starway-backend",
   "version": "3.0.0",
   "type": "module",
+  "main": "api/index.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js"
-  },
+"dev": "node api/index.js",
+    "start": "node api/index.js"
+},
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
     "bcryptjs": "^3.0.3",
