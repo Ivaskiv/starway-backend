@@ -30,6 +30,7 @@ import enrollmentsRouter from "./enrollments.js";
 import paymentsWayForPay from "./payments/wayforpay.js";
 import pingRouter from "./ping.js";
 import webhookRouter from "./webhook.js";
+import meRouter from "./me-router.js";
 
 const app = express();
 
@@ -47,11 +48,11 @@ app.use(cors({
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("dev"));
 
-app.use("/login", login);
-app.use("/register", register);
-app.use("/refresh", refresh);
-app.use("/logout", logout);
-app.use("/telegram", telegram);
+app.use("/auth/login", login);
+app.use("/auth/register", register);
+app.use("/auth/refresh", refresh);
+app.use("/auth/logout", logout);
+app.use("/auth/telegram", telegram);
 
 app.use("/api/ping", pingRouter);
 app.use("/api/users", usersRouter);

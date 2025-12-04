@@ -1,4 +1,7 @@
+// api/cabinet.js
+import jwt from "jsonwebtoken";
 import { Router } from "express";
+
 import {
   getUser,
   getProducts,
@@ -18,10 +21,24 @@ const router = Router();
 
 router.get("/", async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ error: "missing_token" });
 
+    const token = auth.replace("Bearer ", "").trim();
+
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: "invalid_token" });
+    }
+
+    const userId = payload.user_id || payload.id;
+    if (!userId) return res.status(401).json({ error: "bad_token_payload" });
+
+    // --- Load Cabinet Data ---
     const user = await getUser(userId);
-    if (!user) return res.status(404).json({ error: "user not found" });
+    if (!user) return res.status(404).json({ error: "user_not_found" });
 
     const products = await getProducts();
     const enrollments = await getEnrollments(userId);
@@ -31,11 +48,13 @@ router.get("/", async (req, res) => {
     const purchased = await getMiniappPurchases(userId);
     const purchasedIds = purchased.map(p => p.miniapp_id);
 
+    // Products with access flag
     const productList = products.map(p => {
       const enr = enrollments.find(e => e.product_id === p.id);
       return buildProductItem(p, progress, enr);
     });
 
+    // Miniapps list
     const miniappList = miniapps.map(m =>
       buildMiniappItem(m, purchasedIds)
     );
@@ -45,8 +64,10 @@ router.get("/", async (req, res) => {
       products: productList,
       miniapps: miniappList
     });
+
   } catch (err) {
-    res.status(500).json({ error: "server error" });
+    console.error("CABINET ERROR:", err);
+    res.status(500).json({ error: "server_error", message: err.message });
   }
 });
 
