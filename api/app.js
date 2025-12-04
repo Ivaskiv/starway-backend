@@ -37,6 +37,7 @@ app.use(cors({
   origin: [
     'https://star-way.pro',
     'https://www.star-way.pro',
+        'https://starway-backend-qtzh.vercel.app',
     'http://localhost:3000'
   ],
   credentials: true,
@@ -72,7 +73,11 @@ app.get("/", (req, res) => {
     name: "🌟 Starway Backend",
     version: "3.0",
     status: "running",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    routes: {
+      auth: ["/auth/login", "/auth/register"],
+      api: ["/api/ping", "/api/cabinet", "/api/users"]
+    }
   });
 });
 
