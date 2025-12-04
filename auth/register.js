@@ -31,7 +31,7 @@ export default async function register(req, res) {
 
     const user = rows[0];
 
-    const token = signAccess({ id: user.id });
+    const token = signAccess(user.id);
 
     return res.json({ ok: true, token });
 
