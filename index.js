@@ -106,16 +106,20 @@ app.use((err, req, res, next) => {
 });
 
 /* =====================
+     EXPORT FOR VERCEL
+===================== */
+export default app;
+
+// Serverless handler
+import serverlessHttp from 'serverless-http';
+export const handler = serverlessHttp(app);
+
+/* =====================
      LOCAL DEV
 ===================== */
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.VERCEL !== '1' && process.argv[1] === new URL(import.meta.url).pathname) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
 }
-
-/* =====================
-     EXPORT FOR VERCEL
-===================== */
-export default app;
