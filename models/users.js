@@ -29,12 +29,12 @@ export async function createTelegramUser({ telegram_id, telegram_username, name,
   return rows[0];
 }
 
-export async function createEmailUser({ name, email, password }) {
+export async function createEmailUser({ name, email, password, source = 'tilda' }) {
   const hash = await bcrypt.hash(password, 10);
 
   const rows = await sql`
-    INSERT INTO users (name, email, password_hash)
-    VALUES (${name}, ${email}, ${hash})
+    INSERT INTO users (name, email, password_hash, source)
+    VALUES (${name}, ${email}, ${hash}, ${source})
     RETURNING *
   `;
   return rows[0];

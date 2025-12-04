@@ -6,7 +6,7 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 
-// AUTH - імпорти (тепер на рівень вище)
+// AUTH - імпорти
 import login from "../auth/login.js";
 import register from "../auth/register.js";
 import refresh from "../auth/refresh.js";
@@ -16,7 +16,7 @@ import telegram from "../auth/telegram.js";
 // UTILS
 import { authRequired } from "../utils/auth-required.js";
 
-// API (тепер на рівень вище)
+// API - всі роутери на рівень вище
 import usersRouter from "./users.js";
 import lessonsRouter from "./lessons.js";
 import progressRouter from "./progress.js";
@@ -33,7 +33,6 @@ import webhookRouter from "./webhook.js";
 
 const app = express();
 
-// CORS
 app.use(cors({
   origin: [
     'https://star-way.pro',
@@ -47,29 +46,19 @@ app.use(cors({
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("dev"));
 
-/* =====================
-      AUTH (public)
-===================== */
 app.use("/auth/login", login);
 app.use("/auth/register", register);
 app.use("/auth/refresh", refresh);
 app.use("/auth/logout", logout);
 app.use("/auth/telegram", telegram);
 
-/* =====================
-     PUBLIC API
-===================== */
 app.use("/api/ping", pingRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/lessons", lessonsRouter);
 app.use("/api/miniapps", miniappsRouter);
-
 app.use("/api/payments/wayforpay", paymentsWayForPay);
 app.use("/api/webhook", webhookRouter);
 
-/* =====================
-     SECURED API
-===================== */
 app.use("/api/me", authRequired, meRouter);
 app.use("/api/cabinet", authRequired, cabinetRouter);
 app.use("/api/progress", authRequired, progressRouter);
@@ -78,9 +67,6 @@ app.use("/api/purchases", authRequired, purchasesRouter);
 app.use("/api/products", authRequired, productsRouter);
 app.use("/api/enrollments", authRequired, enrollmentsRouter);
 
-/* =====================
-         ROOT
-===================== */
 app.get("/", (req, res) => {
   res.json({
     name: "🌟 Starway Backend",
@@ -90,9 +76,6 @@ app.get("/", (req, res) => {
   });
 });
 
-/* =====================
-     404 + ERROR
-===================== */
 app.use((req, res) => {
   res.status(404).json({ error: "route_not_found", path: req.path });
 });
@@ -102,9 +85,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "server_error", message: err.message });
 });
 
-/* =====================
-     LOCAL DEV
-===================== */
 if (process.env.VERCEL !== '1' && process.argv[1] === new URL(import.meta.url).pathname) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
@@ -112,7 +92,4 @@ if (process.env.VERCEL !== '1' && process.argv[1] === new URL(import.meta.url).p
   });
 }
 
-/* =====================
-     EXPORT FOR VERCEL
-===================== */
 export default app;
