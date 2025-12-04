@@ -6,12 +6,12 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 
-// AUTH
+// AUTH - імпорти
 import login from "./auth/login.js";
 import register from "./auth/register.js";
 import refresh from "./auth/refresh.js";
 import logout from "./auth/logout.js";
-import telegramLogin from "./auth/telegram-login.js";
+import telegram from "./auth/telegram.js";
 import telegramAuto from "./auth/telegram.js";
 
 // UTILS
@@ -34,7 +34,7 @@ import webhookRouter from "./api/webhook.js";
 
 const app = express();
 
-// CORS Configuration
+// CORS
 app.use(cors({
   origin: [
     'https://star-way.pro',
@@ -51,12 +51,14 @@ app.use(morgan("dev"));
 /* =====================
       AUTH (public)
 ===================== */
-app.post("/auth/login", login);
-app.post("/auth/register", register);
-app.post("/auth/refresh", refresh);
-app.post("/auth/logout", logout);
+// ВАЖЛИВО: використовуємо роутер, а не функцію handler!
+app.use("/auth/login", login);
+app.use("/auth/register", register);
+app.use("/auth/refresh", refresh);
+app.use("/auth/logout", logout);
+app.use("/auth/telegram-login", telegram);
 
-app.post("/auth/telegram-login", telegramLogin);
+// Для telegram.js потрібен wrapper
 app.post("/auth/telegram", telegramAuto);
 
 /* =====================
@@ -106,15 +108,6 @@ app.use((err, req, res, next) => {
 });
 
 /* =====================
-     EXPORT FOR VERCEL
-===================== */
-export default app;
-
-// Serverless handler
-import serverlessHttp from 'serverless-http';
-export const handler = serverlessHttp(app);
-
-/* =====================
      LOCAL DEV
 ===================== */
 if (process.env.VERCEL !== '1' && process.argv[1] === new URL(import.meta.url).pathname) {
@@ -123,3 +116,8 @@ if (process.env.VERCEL !== '1' && process.argv[1] === new URL(import.meta.url).p
     console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
 }
+
+/* =====================
+     EXPORT FOR VERCEL
+===================== */
+export default app;
