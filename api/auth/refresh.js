@@ -1,41 +1,22 @@
-// auth/register.js
+// api/auth/refresh.js
 import { Router } from "express";
-import { getUserByEmail, createEmailUser } from "../../models/users.js";
-import { signAccess, signRefresh } from "../../utils/jwt.js";
+import jwt from "jsonwebtoken";
 import { storeRefreshToken } from "../../models/auth.js";
+import { signAccess } from "../../utils/jwt.js";
 
 const router = Router();
 
 router.post("/", async (req, res) => {
+  const { refresh } = req.body;
+
   try {
-    const { name, email, password } = req.body;
+    const payload = jwt.verify(refresh, process.env.JWT_REFRESH_SECRET);
+    const newAccess = signAccess(payload.id);
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "missing_fields" });
-    }
+    return res.json({ access: newAccess });
 
-    const exists = await getUserByEmail(email);
-    if (exists) {
-      return res.status(400).json({ error: "email_exists" });
-    }
-
-    const user = await createEmailUser({ name, email, password });
-
-    const access = signAccess(user.id);
-    const refresh = signRefresh(user.id);
-
-    await storeRefreshToken(user.id, refresh);
-
-    res.json({ 
-      ok: true, 
-      token: access,
-      access,
-      refresh,
-      userId: user.id
-    });
-  } catch (err) {
-    console.error("REGISTER ERROR:", err);
-    res.status(500).json({ error: "server_error" });
+  } catch (e) {
+    return res.status(401).json({ error: "invalid_refresh" });
   }
 });
 
