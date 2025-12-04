@@ -1,4 +1,4 @@
-// api/auth/telegram.js
+// auth/telegram.js
 import { Router } from "express";
 import { sql } from "../db/client.js";
 import { signAccess } from "../utils/jwt.js";

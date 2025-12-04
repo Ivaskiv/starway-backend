@@ -1,4 +1,4 @@
-// api/auth/refresh.js
+// auth/refresh.js
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { storeRefreshToken } from "../models/auth.js";

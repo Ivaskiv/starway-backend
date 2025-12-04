@@ -1,4 +1,4 @@
-// api/auth/login.js
+// auth/login.js
 import { Router } from "express";
 import { getUserByEmail, validatePassword } from "../models/users.js";
 import { signAccess, signRefresh } from "../utils/jwt.js";

@@ -1,4 +1,4 @@
-// api/auth/logout.js
+// auth/logout.js
 
 import { Router } from "express";
 import { deleteRefreshToken } from "../models/auth.js";

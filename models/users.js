@@ -1,7 +1,4 @@
-//models/users.js
-
-//models/users.js
-
+// models/users.js
 import { sql } from "../db/client.js";
 import bcrypt from "bcryptjs";
 
@@ -37,6 +34,31 @@ export async function createTelegramUser({ telegram_id, telegram_username, name,
     VALUES (${telegram_id}, ${telegram_username}, ${name}, ${source})
     RETURNING *
   `;
+  return rows[0];
+}
+
+export async function updateUser(userId, updates) {
+  const fields = [];
+  const values = [];
+  
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      fields.push(`${key} = $${values.length + 1}`);
+      values.push(value);
+    }
+  });
+
+  if (fields.length === 0) return null;
+
+  values.push(userId);
+  
+  const rows = await sql`
+    UPDATE users
+    SET ${sql(fields.join(', '))}
+    WHERE id = ${userId}
+    RETURNING *
+  `;
+  
   return rows[0];
 }
 
