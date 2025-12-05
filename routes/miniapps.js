@@ -1,4 +1,4 @@
-// api/miniapps.js
+// routes/miniapps.js
 import express from 'express';
 import { sql } from '../db/client.js';
 

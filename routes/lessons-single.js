@@ -1,4 +1,4 @@
-//api/lessons-single.js
+//lessons-single.js
 import { Router } from "express";
 import { getLessonById } from "../models/lessons.js";
 

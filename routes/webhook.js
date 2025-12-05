@@ -1,5 +1,4 @@
-// api/webhook.js
-// api/webhook.js
+// routes/webhook.js
 import express from 'express';
 import { sql } from '../db/client.js';
 

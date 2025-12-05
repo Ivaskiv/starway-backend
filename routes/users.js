@@ -1,4 +1,4 @@
-// api/users.js
+// routes/users.js
 import { Router } from "express";
 import {
   getUserByTelegramId,

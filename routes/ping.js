@@ -1,4 +1,4 @@
-// api/ping.js
+// routes/ping.js
 import express from 'express';
 const router = express.Router();
 

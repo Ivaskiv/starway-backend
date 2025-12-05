@@ -1,4 +1,4 @@
-// api/enrollments.js
+// enrollments.js
 import { Router } from "express";
 import { getEnrollment, createEnrollment } from "../models/enrollments.js";
 import { getProductBySlug } from "../models/products.js";

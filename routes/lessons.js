@@ -1,4 +1,4 @@
-// api/lessons.js
+// routes/lessons.js
 import { Router } from "express";
 import { sql } from "../db/client.js";
 

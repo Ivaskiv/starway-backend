@@ -1,4 +1,4 @@
-// api/answers.js
+// answers.js
 import { Router } from "express";
 import { getLessonById } from "../models/lessons.js";
 import { sql } from "../db/client.js";

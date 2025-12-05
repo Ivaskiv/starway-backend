@@ -1,4 +1,4 @@
-// api/cabinet.js
+// cabinet.js
 import jwt from "jsonwebtoken";
 import { Router } from "express";
 

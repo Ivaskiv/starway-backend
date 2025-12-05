@@ -1,4 +1,4 @@
-// api/progress.js
+// routes/progress.js
 import { Router } from "express";
 import { getLessonById } from "../models/lessons.js";
 import {

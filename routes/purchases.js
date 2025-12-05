@@ -1,4 +1,4 @@
-// api/purchases.js
+// routes/purchases.js
 import { Router } from "express";
 import { sql } from "../db/client.js";
 
