@@ -30,29 +30,7 @@ import webhookRouter from "../routes/webhook.js";
 
 const app = express();
 
-// CORS - РОЗШИРЕНИЙ
-app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      'https://star-way.pro',
-      'https://www.star-way.pro',
-      'https://starway-backend-qtzh.vercel.app',
-      'http://localhost:3000'
-    ];
-    
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Дозволяємо всі для debugging
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  exposedHeaders: ['Content-Length', 'Content-Type']
-}));
-
-// Додатковий CORS для preflight
+app.use(cors());
 app.options('*', cors());
 
 app.use(express.json({ limit: "2mb" }));
