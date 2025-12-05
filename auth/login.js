@@ -1,7 +1,7 @@
 // auth/login.js
 import express from "express";
 import pg from "pg";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 const router = express.Router();
