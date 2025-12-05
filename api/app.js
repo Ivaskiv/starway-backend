@@ -35,15 +35,24 @@ const app = express();
 
 // CORS
 app.use(cors({
-  origin: [
-    "https://star-way.pro",
-    "https://www.star-way.pro",
-    "https://starway-backend-qtzh.vercel.app",
-    "http://localhost:3000"
-  ],
+  origin: true,
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
+// app.use(cors({
+//   origin: [
+//     'https://star-way.pro',
+//     'https://www.star-way.pro',
+//     'https://starway-backend-qtzh.vercel.app',
+//     'http://localhost:3000',
+//     'https://tilda.cc',
+//     'https://*.tilda.cc'
+//   ],
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+// }));
 
 // BASIC MIDDLEWARE
 app.use(express.json({ limit: "2mb" }));
