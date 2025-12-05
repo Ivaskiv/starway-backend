@@ -30,6 +30,7 @@ import pingRouter from "../routes/ping.js";
 import webhookRouter from "../routes/webhook.js";
 
 const app = express();
+app.options("*", cors());
 
 // CORS
 app.use((req, res, next) => {
@@ -44,7 +45,21 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://star-way.pro",
+      "https://www.star-way.pro",
+      "https://starway-backend-qtzh.vercel.app",
+      "http://localhost:3000"
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  })
+);
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("dev"));
 
