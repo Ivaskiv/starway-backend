@@ -11,6 +11,7 @@ export function authRequired(req, res, next) {
     req.userId = decoded.userId;
     next();
   } catch {
+    console.error("Auth middleware error:", err);
     return res.status(401).json({ error: "invalid_token" });
   }
 }

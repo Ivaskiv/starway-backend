@@ -33,8 +33,9 @@ router.get("/", async (req, res) => {
       return res.status(401).json({ error: "invalid_token" });
     }
 
-    const userId = payload.user_id || payload.id;
+    const userId = payload.userId || payload.user_id || payload.id;
     if (!userId) return res.status(401).json({ error: "bad_token_payload" });
+    console.log("✅ Cabinet load for userId:", userId);
 
     // --- Load Cabinet Data ---
     const user = await getUser(userId);
