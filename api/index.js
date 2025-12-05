@@ -45,23 +45,30 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(
-  cors({
-    origin: [
-      "https://star-way.pro",
-      "https://www.star-way.pro",
-      "https://starway-backend-qtzh.vercel.app",
-      "http://localhost:3000"
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-  })
-);
+app.use(cors({
+  origin: [
+    "https://star-way.pro",
+    "https://www.star-way.pro",
+    "http://star-way.pro",
+    "https://tilda.cc",
+    "https://project9957229.tilda.ws",
+    "http://localhost:3000"
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+  exposedHeaders: ["Content-Length", "Content-Type"],
+  maxAge: 86400 
+}));
+
+app.options("*", cors());
+
 app.use(express.json({ limit: "2mb" }));
-app.use(morgan("dev"));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan("dev"));
+}
 
 app.use("/auth/login", login);
 app.use("/auth/register", register);
