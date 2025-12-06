@@ -1,0 +1,37 @@
+{
+  "courses": [
+    {
+      "slug": "5funnel",
+      "title": "AI-воронки: системний підхід",
+      "type": "paid",
+      "category": "course",
+      "price": 5000,
+      "duration": "8 тижнів"
+    },
+    {
+      "slug": "aiEffect",
+      "title": "Ефект AI: трансформація бізнесу",
+      "type": "paid",
+      "category": "course"
+    }
+  ],
+  "practicums": [
+    {
+      "slug": "5points",
+      "title": "5 точок опори за 5 днів",
+      "type": "paid",
+      "category": "practicum",
+      "price": 1500,
+      "duration": "5 днів"
+    }
+  ],
+  "bonuses": [
+    {
+      "slug": "consciousness",
+      "title": "Сила свідомості",
+      "type": "free",
+      "category": "bonus",
+      "access": "auto"
+    }
+  ]
+}
