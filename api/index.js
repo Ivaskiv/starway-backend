@@ -32,17 +32,34 @@ import pingRouter from "../routes/ping.js";
 import webhookRouter from "../routes/webhook.js";
 
 const app = express();
-
+const allowedOrigins = [
+  'https://star-way.pro',
+  'http://star-way.pro',
+  'https://www.star-way.pro',
+  'http://www.star-way.pro',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
 // ─── CORS ─────────────────────────
 app.use(
   cors({
-    origin: (origin, cb) => cb(null, true),
+    origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn('⚠️ CORS blocked origin:', origin);
+      callback(null, true); 
+    }
+  },
     credentials: true,
     methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
     allowedHeaders: ["Content-Type","Authorization","Accept"],
     exposedHeaders: ["Content-Length","Content-Type"]
   })
 );
+app.options('*', cors());
 
 // ─── BODY PARSERS ─────────────────
 app.use(express.json({ limit: "2mb" }));
