@@ -1,17 +1,21 @@
 // utils/jwt.js
 import jwt from "jsonwebtoken";
 
-const ACCESS_TTL = "1d";  // 24 години для тестування
+const ACCESS_TTL = "1d";
 const REFRESH_TTL = "30d";
 
-const SECRET = process.env.JWT_SECRET || "starway_secret_2024_change_in_production";
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 
-console.log("🔐 JWT SECRET initialized:", SECRET.substring(0, 10) + "...");
+// Перевірка при старті
+if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+  throw new Error('❌ JWT secrets not configured!');
+}
 
 export function signAccess(userId) {
   return jwt.sign(
     { userId, type: 'access' }, 
-    SECRET, 
+    JWT_SECRET, 
     { expiresIn: ACCESS_TTL }
   );
 }
@@ -19,28 +23,15 @@ export function signAccess(userId) {
 export function signRefresh(userId) {
   return jwt.sign(
     { userId, type: 'refresh' }, 
-    SECRET, 
+    JWT_REFRESH_SECRET,  
     { expiresIn: REFRESH_TTL }
   );
 }
 
 export function verifyAccess(token) {
-  try {
-    const decoded = jwt.verify(token, SECRET);
-    if (decoded.type !== 'access') {
-      throw new Error('Invalid token type');
-    }
-    return decoded;
-  } catch (err) {
-    console.error("❌ JWT Verify Error:", err.message);
-    throw err;
-  }
+  return jwt.verify(token, JWT_SECRET);
 }
 
 export function verifyRefresh(token) {
-  const decoded = jwt.verify(token, SECRET);
-  if (decoded.type !== 'refresh') {
-    throw new Error('Invalid token type');
-  }
-  return decoded;
+  return jwt.verify(token, JWT_REFRESH_SECRET);  
 }

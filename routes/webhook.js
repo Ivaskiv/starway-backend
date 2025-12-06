@@ -13,58 +13,36 @@ async function findOrCreateUser({ email, telegram_id }) {
     throw new Error('User identification required: email or telegram_id');
   }
 
-  const client = await pool.connect();
-  try {
-    // 1) пробуємо знайти
-    const res = await client.query(
-      `
-      SELECT * FROM users
-      WHERE ($1::text IS NOT NULL AND email = $1)
-         OR ($2::text IS NOT NULL AND telegram_id = $2)
-      LIMIT 1
-      `,
-      [email || null, telegram_id || null]
-    );
+  const users = await sql`
+    SELECT * FROM users
+    WHERE (${email}::text IS NOT NULL AND email = ${email})
+       OR (${telegram_id}::text IS NOT NULL AND telegram_id = ${telegram_id})
+    LIMIT 1
+  `;
 
-    if (res.rows[0]) return res.rows[0];
+  if (users[0]) return users[0];
 
-    // 2) створюємо
-    const insert = await client.query(
-      `
-      INSERT INTO users (email, telegram_id)
-      VALUES ($1, $2)
-      RETURNING *
-      `,
-      [email || null, telegram_id || null]
-    );
+  const newUsers = await sql`
+    INSERT INTO users (email, telegram_id, source)
+    VALUES (${email}, ${telegram_id}, 'webhook')
+    RETURNING *
+  `;
 
-    return insert.rows[0];
-  } finally {
-    client.release();
-  }
+  return newUsers[0];
 }
 
 async function findMiniappByProduct(product) {
   if (!product) return null;
 
-  const client = await pool.connect();
-  try {
-    // product типу "5funnel", "5points", "ai-mentor" і т.д.
-    const res = await client.query(
-      `
-      SELECT * FROM miniapps
-      WHERE slug = $1 OR code = $1
-      LIMIT 1
-      `,
-      [product]
-    );
-    return res.rows[0] || null;
-  } finally {
-    client.release();
-  }
+  const miniapps = await sql`
+    SELECT * FROM miniapps
+    WHERE slug = ${product} OR code = ${product}
+    LIMIT 1
+  `;
+  
+  return miniapps[0] || null;
 }
 
-// "paid-5funnel|source=tilda" → { status: 'paid', product: '5funnel', source: 'tilda' }
 function parseStartParam(start) {
   if (!start) return {};
 
@@ -74,7 +52,7 @@ function parseStartParam(start) {
   let source = null;
 
   if (statusAndProduct) {
-    const [st, prod] = statusAndProduct.split('-'); // 'paid-5funnel'
+    const [st, prod] = statusAndProduct.split('-');
     status = st || null;
     product = prod || null;
   }
@@ -87,46 +65,27 @@ function parseStartParam(start) {
   return { status, product, source };
 }
 
-// запис / оновлення покупки
 async function upsertPurchase({ user_id, miniapp_id, source, external_id, status, amount, currency }) {
-  const client = await pool.connect();
-  try {
-    const res = await client.query(
-      `
-      INSERT INTO purchases (user_id, miniapp_id, source, external_id, status, amount, currency)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      ON CONFLICT (user_id, miniapp_id)
-      DO UPDATE SET
-        source = EXCLUDED.source,
-        external_id = EXCLUDED.external_id,
-        status = EXCLUDED.status,
-        amount = EXCLUDED.amount,
-        currency = EXCLUDED.currency
-      RETURNING *
-      `,
-      [
-        user_id,
-        miniapp_id,
-        source || 'unknown',
-        external_id || null,
-        status || 'paid',
-        amount || null,
-        currency || null,
-      ]
-    );
+  const purchases = await sql`
+    INSERT INTO purchases (user_id, miniapp_id, source, external_id, status, amount, currency)
+    VALUES (${user_id}, ${miniapp_id}, ${source || 'unknown'}, ${external_id}, ${status || 'paid'}, ${amount}, ${currency})
+    ON CONFLICT (user_id, miniapp_id)
+    DO UPDATE SET
+      source = EXCLUDED.source,
+      external_id = EXCLUDED.external_id,
+      status = EXCLUDED.status,
+      amount = EXCLUDED.amount,
+      currency = EXCLUDED.currency
+    RETURNING *
+  `;
 
-    return res.rows[0];
-  } finally {
-    client.release();
-  }
+  return purchases[0];
 }
 
 // ───────────────────────────────────────────────────────────────
 // main endpoint /api/webhook
 // ───────────────────────────────────────────────────────────────
 
-// 1) WayForPay → POST JSON
-// 2) Tilda / SendPulse → POST JSON з полем start: "paid-5funnel|source=tilda"
 router.post('/', async (req, res) => {
   const payload = req.body || {};
   console.log('[webhook] incoming payload:', payload);
@@ -135,12 +94,10 @@ router.post('/', async (req, res) => {
     // ─────────────────────────────────────────────
     // 1) WayForPay webhook
     // ─────────────────────────────────────────────
-    // очікуємо:
-    // { orderReference, merchantSignature, email, product, telegram_id, amount, currency }
     if (payload.orderReference && payload.merchantSignature) {
       const {
         orderReference,
-        merchantSignature, // поки не валідуємо, можна додати пізніше
+        merchantSignature,
         email,
         product,
         telegram_id,
@@ -180,8 +137,6 @@ router.post('/', async (req, res) => {
 
     // ─────────────────────────────────────────────
     // 2) Tilda success → через start=paid-5funnel|source=tilda
-    //    Сюди ти можеш слати POST з Tilda / SendPulse:
-    //    body: { start: "...", email, telegram_id }
     // ─────────────────────────────────────────────
     if (payload.start || payload.startParam) {
       const start = payload.start || payload.startParam;
@@ -227,15 +182,12 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // ─────────────────────────────────────────────
-    // Якщо payload не підходить ні під один формат
-    // ─────────────────────────────────────────────
     return res.status(400).json({
       ok: false,
       reason: 'UNSUPPORTED_PAYLOAD',
-      message:
-        'Webhook payload is not recognized. Expected WayForPay fields or { start: "paid-..." } from Tilda.',
+      message: 'Webhook payload is not recognized.',
     });
+    
   } catch (err) {
     console.error('[webhook] error:', err);
     return res.status(500).json({

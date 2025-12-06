@@ -5,7 +5,6 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import serverlessHttp from "serverless-http";
 
 // ─── AUTH ──────────────────────────
 import login from "../auth/login.js";
@@ -91,4 +90,4 @@ app.use((err,_,res,__)=>{
 });
 
 // ─── EXPORT FOR VERCEL ───────────
-export default serverlessHttp(app);
+export default app;

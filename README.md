@@ -78,3 +78,22 @@ Backend 2.0
 ✔ Webhook для SendPulse/Tilda
 ✔ Health-check /api/ping
 ✔ Unification + Clean Architecture
+
+<!-- # JWT_SECRET -->
+node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(64).toString('hex'))"
+
+<!-- # JWT_REFRESH_SECRET   -->
+node -e "console.log('JWT_REFRESH_SECRET=' + require('crypto').randomBytes(64).toString('hex'))"
+
+<!-- Швидкий скрипт (згенерує все одразу)
+Створи файл generate-secrets.js: -->
+javascript// generate-secrets.js
+import crypto from 'crypto';
+
+console.log('\n🔐 Згенеровані секрети:\n');
+console.log('JWT_SECRET=' + crypto.randomBytes(64).toString('hex'));
+console.log('JWT_REFRESH_SECRET=' + crypto.randomBytes(64).toString('hex'));
+console.log('\n✅ Скопіюй ці значення в .env та Vercel\n');
+<!-- Запусти: -->
+bashnode generate-secrets.js
+
