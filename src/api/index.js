@@ -62,5 +62,6 @@ if (!process.env.VERCEL) { // локальний запуск
 `);
   });
 }
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
 export default app;
