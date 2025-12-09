@@ -1,68 +1,50 @@
 // models/users.js
-import { sql } from "../db/client.js";
-import bcrypt from "bcryptjs";
+import pg from "pg";
+export const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
-export async function getUserById(id) {
-  const rows = await sql`SELECT * FROM users WHERE id = ${id} LIMIT 1`;
-  return rows[0] || null;
-}
+// === BASE HELPERS ===
 
-export async function getUserByEmail(email) {
-  const rows = await sql`SELECT * FROM users WHERE email = ${email} LIMIT 1`;
-  return rows[0] || null;
-}
-
-export async function getUserByTelegramId(id) {
-  const rows = await sql`SELECT * FROM users WHERE telegram_id = ${id} LIMIT 1`;
-  return rows[0] || null;
-}
-
-export async function createEmailUser({ name, email, password, source = 'email' }) {
-  const hash = await bcrypt.hash(password, 10);
-
-  const rows = await sql`
-    INSERT INTO users (name, email, password_hash, source)
-    VALUES (${name}, ${email}, ${hash}, ${source})
-    RETURNING *
+export async function findUserByEmail(email) {
+  const sql = `
+    SELECT id, email, password_hash, name, role, telegram_id, avatar
+    FROM users WHERE email=$1
   `;
+  const { rows } = await pool.query(sql, [email]);
+  return rows[0] || null;
+}
+
+export async function findUserByTelegram(id) {
+  const sql = `SELECT * FROM users WHERE telegram_id=$1`;
+  const { rows } = await pool.query(sql, [id]);
+  return rows[0] || null;
+}
+
+export async function createUser({ id, email, password_hash, name, role }) {
+  const sql = `
+    INSERT INTO users (id, email, password_hash, name, role)
+    VALUES ($1,$2,$3,$4,$5)
+    RETURNING id, email, name, role
+  `;
+  const { rows } = await pool.query(sql, [
+    id,
+    email,
+    password_hash,
+    name,
+    role || "user",
+  ]);
   return rows[0];
 }
 
-export async function createTelegramUser({ telegram_id, telegram_username, name, source = 'telegram' }) {
-  const rows = await sql`
-    INSERT INTO users (telegram_id, telegram_username, name, source)
-    VALUES (${telegram_id}, ${telegram_username}, ${name}, ${source})
-    RETURNING *
-  `;
-  return rows[0];
-}
-
-export async function updateUser(userId, updates) {
-  const fields = [];
-  const values = [];
-  
-  Object.entries(updates).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      fields.push(`${key} = $${values.length + 1}`);
-      values.push(value);
-    }
-  });
-
-  if (fields.length === 0) return null;
-
-  values.push(userId);
-  
-  const rows = await sql`
+export async function updateTelegram(userId, tgId, data) {
+  const sql = `
     UPDATE users
-    SET ${sql(fields.join(', '))}
-    WHERE id = ${userId}
+    SET telegram_id=$2, telegram_data=$3, updated_at=NOW()
+    WHERE id=$1
     RETURNING *
   `;
-  
+  const { rows } = await pool.query(sql, [userId, tgId, data]);
   return rows[0];
-}
-
-export async function validatePassword(user, password) {
-  if (!user?.password_hash) return false;
-  return bcrypt.compare(password, user.password_hash);
 }

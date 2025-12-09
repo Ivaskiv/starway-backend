@@ -1,43 +1,30 @@
 // auth/telegram.js
-import { Router } from "express";
-import { sql } from "../db/client.js";
-import { signAccess } from "../utils/jwt.js";
+import express from "express";
+import { findUserByTelegram, updateTelegram, createUser } from "../models/users.js";
+import crypto from "crypto";
 
-const router = Router();
+const router = express.Router();
 
 router.post("/", async (req, res) => {
-  try {
-    const { telegram_id, telegram_username, email, name } = req.body;
+  const { telegramId, data } = req.body;
 
-    if (!telegram_id && !email)
-      return res.status(400).json({ error: "no_identifiers" });
+  if (!telegramId) return res.status(400).json({ error: "missing_tg_id" });
 
-    let user;
+  let user = await findUserByTelegram(telegramId);
 
-    const found = await sql`
-      SELECT * FROM users
-      WHERE telegram_id = ${telegram_id} OR email = ${email}
-      LIMIT 1
-    `;
-    user = found[0];
+  if (!user) {
+    user = await createUser({
+      id: crypto.randomUUID(),
+      email: null,
+      password_hash: null,
+      name: data?.first_name || "Telegram User",
+      role: "user",
+    });
 
-    if (!user) {
-      const created = await sql`
-        INSERT INTO users (telegram_id, telegram_username, email, name, source)
-        VALUES (${telegram_id}, ${telegram_username}, ${email}, ${name}, 'telegram')
-        RETURNING *
-      `;
-      user = created[0];
-    }
-
-    const token = signAccess(user.id);
-
-    res.json({ ok: true, token, user });
-
-  } catch (err) {
-    console.error("Telegram auth error:", err);
-    res.status(500).json({ error: "server_error" });
+    await updateTelegram(user.id, telegramId, data);
   }
+
+  res.json({ user });
 });
 
 export default router;
