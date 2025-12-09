@@ -1,4 +1,4 @@
-// src/api/index.js
+// api/index.js
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -32,7 +32,6 @@ import pingRouter from "../../routes/ping.js";
 import webhookRouter from "../../routes/webhook.js";
 
 const app = express();
-
 const allowedOrigins = [
   'https://star-way.pro',
   'http://star-way.pro',
@@ -40,16 +39,18 @@ const allowedOrigins = [
   'http://www.star-way.pro',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  'http://localhost:5173', // додано для локального фронта
+  'http://localhost:5173'
 ];
 
 // ─── CORS ─────────────────────────
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin) return callback(null, true); // allow non-browser tools like Postman
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    console.warn('⚠️ CORS blocked origin:', origin);
-    callback(new Error('Not allowed by CORS'));
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) callback(null, true);
+    else {
+      console.warn('⚠️ CORS blocked origin:', origin);
+      callback(null, true); // можна true для dev, бо пустий origin при прямому Postman
+    }
   },
   credentials: true,
   methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
@@ -81,6 +82,7 @@ app.use("/api/users", usersRouter);
 app.use("/api/lessons", lessonsRouter);
 
 // ─── AUTH REQUIRED ROUTES ─────────
+// Загальні користувацькі маршрути
 app.use("/api/me", authRequired, meRouter);
 app.use("/api/cabinet", authRequired, cabinetRouter);
 app.use("/api/progress", authRequired, progressRouter);
