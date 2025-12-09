@@ -1,116 +1,66 @@
-// api/index.js
+// src/api/index.js
 import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
 import cors from "cors";
-import morgan from "morgan";
-
-// ─── AUTH ──────────────────────────
-import login from "../../auth/login.js";
-import register from "../../auth/register.js";
-import refresh from "../../auth/refresh.js";
-import logout from "../../auth/logout.js";
-import telegram from "../../auth/telegram.js";
-
-// ─── MIDDLEWARES ──────────────────
-import { authRequired, adminRequired } from "../../utils/auth-required.js";
-
-// ─── ROUTES ───────────────────────
-import usersRouter from "../../routes/users.js";
-import lessonsRouter from "../../routes/lessons.js";
-import progressRouter from "../../routes/progress.js";
-import answersRouter from "../../routes/answers.js";
-import purchasesRouter from "../../routes/purchases.js";
-import miniappsRouter from "../../routes/miniapps.js";
-import meRouter from "../../routes/me.js";
-import cabinetRouter from "../../routes/cabinet.js";
+import loginRouter from "../../auth/login.js";
+import registerRouter from "../../auth/register.js";
+import { requireAdmin } from "../../auth/adminAuth.js";
 import productsRouter from "../../routes/products.js";
-import enrollmentsRouter from "../../routes/enrollments.js";
-import paymentsWayForPay from "../../routes/payments/wayforpay.js";
-import pingRouter from "../../routes/ping.js";
-import webhookRouter from "../../routes/webhook.js";
 
 const app = express();
+const PORT = process.env.PORT || 3001;
+
+// ─── CORS ───────────────────────────────
 const allowedOrigins = [
+  'http://localhost:5173', // React dev
   'https://star-way.pro',
-  'http://star-way.pro',
-  'https://www.star-way.pro',
-  'http://www.star-way.pro',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:5173'
+  'https://www.star-way.pro'
 ];
 
-// ─── CORS ─────────────────────────
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); // Postman / серверні запити
     if (allowedOrigins.includes(origin)) callback(null, true);
-    else {
-      console.warn('⚠️ CORS blocked origin:', origin);
-      callback(null, true); // можна true для dev, бо пустий origin при прямому Postman
-    }
+    else callback(new Error('CORS blocked'));
   },
   credentials: true,
   methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization","Accept"],
-  exposedHeaders: ["Content-Length","Content-Type"]
+  allowedHeaders: ["Content-Type","Authorization"]
 }));
-app.options('*', cors());
 
-// ─── BODY PARSERS ─────────────────
+// ─── BODY PARSERS ───────────────────────
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
-// ─── DEV LOGGER ───────────────────
-if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
+// ─── ROUTES AUTH ────────────────────────
+app.use("/auth/login", loginRouter);
+app.use("/auth/register", registerRouter);
 
-// ─── AUTH ─────────────────────────
-app.use("/auth/login", login);
-app.use("/auth/register", register);
-app.use("/auth/refresh", refresh);
-app.use("/auth/logout", logout);
-app.use("/auth/telegram", telegram);
+// ─── PROTECTED ROUTES ──────────────────
+app.use("/api/products", requireAdmin, productsRouter);
 
-// ─── PUBLIC ROUTES ────────────────
-app.use("/api/ping", pingRouter);
-app.use("/api/webhook", webhookRouter);
-app.use("/api/miniapps", miniappsRouter);
-app.use("/api/payments/wayforpay", paymentsWayForPay);
-app.use("/api/users", usersRouter);
-app.use("/api/lessons", lessonsRouter);
-
-// ─── AUTH REQUIRED ROUTES ─────────
-// Загальні користувацькі маршрути
-app.use("/api/me", authRequired, meRouter);
-app.use("/api/cabinet", authRequired, cabinetRouter);
-app.use("/api/progress", authRequired, progressRouter);
-app.use("/api/answers", authRequired, answersRouter);
-app.use("/api/purchases", authRequired, purchasesRouter);
-app.use("/api/enrollments", authRequired, enrollmentsRouter);
-
-// Тільки адмін може CRUD продукти
-app.use("/api/products", authRequired, adminRequired, productsRouter);
-
-// ─── HOME ─────────────────────────
-app.get("/", (_, res) => {
-  res.json({ 
-    name:"🌟 Starway Backend", 
-    version:"3.0", 
-    status:"running", 
-    timestamp:new Date().toISOString() 
-  });
+// ─── SIMPLE ROOT FOR TEST ─────────────
+app.get('/', (req, res) => {
+  res.json({ status: "Starway Backend running" });
 });
 
-// ─── 404 ──────────────────────────
-app.use((req,res) => res.status(404).json({ error:"not_found", path:req.path }));
-
-// ─── GLOBAL ERROR HANDLER ─────────
-app.use((err,_,res,__)=>{
+// ─── GLOBAL ERROR HANDLER ─────────────
+app.use((err, req, res, next) => {
   console.error("🔥 SERVER ERROR:", err);
-  res.status(500).json({ error:"server_error" });
+  res.status(500).json({ error: "server_error", message: err.message });
 });
 
-// ─── EXPORT FOR VERCEL ───────────
+// ─── START SERVER ──────────────────────
+if (!process.env.VERCEL) { // локальний запуск
+  app.listen(PORT, () => {
+    console.log(`
+✅ Database client initialized
+🚀 Server running locally
+📍 http://localhost:${PORT}
+`);
+  });
+}
+
 export default app;
