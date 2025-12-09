@@ -14,7 +14,7 @@ import logout from "../auth/logout.js";
 import telegram from "../auth/telegram.js";
 
 // ─── MIDDLEWARES ──────────────────
-import { authRequired } from "../utils/auth-required.js";
+import { authRequired, adminRequired } from "../utils/auth-required.js";
 
 // ─── ROUTES ───────────────────────
 import usersRouter from "../routes/users.js";
@@ -40,25 +40,22 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000'
 ];
+
 // ─── CORS ─────────────────────────
-app.use(
-  cors({
-    origin: function(origin, callback) {
+app.use(cors({
+  origin: function(origin, callback) {
     if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
+    if (allowedOrigins.includes(origin)) callback(null, true);
+    else {
       console.warn('⚠️ CORS blocked origin:', origin);
       callback(null, true); 
     }
   },
-    credentials: true,
-    methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-    allowedHeaders: ["Content-Type","Authorization","Accept"],
-    exposedHeaders: ["Content-Length","Content-Type"]
-  })
-);
+  credentials: true,
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization","Accept"],
+  exposedHeaders: ["Content-Length","Content-Type"]
+}));
 app.options('*', cors());
 
 // ─── BODY PARSERS ─────────────────
@@ -84,21 +81,29 @@ app.use("/api/users", usersRouter);
 app.use("/api/lessons", lessonsRouter);
 
 // ─── AUTH REQUIRED ROUTES ─────────
+// Загальні користувацькі маршрути
 app.use("/api/me", authRequired, meRouter);
 app.use("/api/cabinet", authRequired, cabinetRouter);
 app.use("/api/progress", authRequired, progressRouter);
 app.use("/api/answers", authRequired, answersRouter);
 app.use("/api/purchases", authRequired, purchasesRouter);
-app.use("/api/products", authRequired, productsRouter);
 app.use("/api/enrollments", authRequired, enrollmentsRouter);
+
+// Тільки адмін може CRUD продукти
+app.use("/api/products", authRequired, adminRequired, productsRouter);
 
 // ─── HOME ─────────────────────────
 app.get("/", (_, res) => {
-  res.json({ name:"🌟 Starway Backend", version:"3.0", status:"running", timestamp:new Date().toISOString() });
+  res.json({ 
+    name:"🌟 Starway Backend", 
+    version:"3.0", 
+    status:"running", 
+    timestamp:new Date().toISOString() 
+  });
 });
 
 // ─── 404 ──────────────────────────
-app.use((req,res)=>res.status(404).json({ error:"not_found", path:req.path }));
+app.use((req,res) => res.status(404).json({ error:"not_found", path:req.path }));
 
 // ─── GLOBAL ERROR HANDLER ─────────
 app.use((err,_,res,__)=>{

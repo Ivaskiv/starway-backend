@@ -1,41 +1,35 @@
 // utils/auth-required.js
 import { verifyAccess } from "./jwt.js";
+import { sql } from "../db/client.js"; // для вибірки користувача з БД
 
-export function authRequired(req, res, next) {
+export async function authRequired(req, res, next) {
   try {
     const auth = req.headers.authorization;
-    
-    if (!auth) {
-      console.log("❌ No Authorization header");
-      return res.status(401).json({ error: "no_token" });
-    }
+    if (!auth) return res.status(401).json({ error: "no_token" });
 
     const token = auth.replace("Bearer ", "").trim();
-    
-    if (!token) {
-      console.log("❌ Empty token");
-      return res.status(401).json({ error: "no_token" });
-    }
+    if (!token) return res.status(401).json({ error: "no_token" });
 
     const decoded = verifyAccess(token);
-    
-    if (!decoded.userId) {
-      console.log("❌ No userId in token");
-      return res.status(401).json({ error: "invalid_token" });
-    }
+    if (!decoded.userId) return res.status(401).json({ error: "invalid_token" });
 
-    // ✅ Зберігаємо userId в req
-    req.userId = decoded.userId;
-    
-    console.log("✅ Auth success for userId:", decoded.userId);
-    
+    // ✅ отримуємо повного користувача
+    const result = await sql`SELECT id, email, name, role FROM users WHERE id = ${decoded.userId}`;
+    const user = result[0];
+    if (!user) return res.status(401).json({ error: "user_not_found" });
+
+    req.userId = user.id;
+    req.user = user;
+
     next();
-
   } catch (err) {
-    console.error("❌ Auth middleware error:", err.message);
-    return res.status(401).json({ 
-      error: "invalid_token",
-      message: err.message 
-    });
+    return res.status(401).json({ error: "invalid_token", message: err.message });
   }
+}
+
+export function adminRequired(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'access_denied' });
+  }
+  next();
 }
