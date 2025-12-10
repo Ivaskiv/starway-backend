@@ -1,4 +1,3 @@
-// src/api/index.js — ОСТАТОЧНА ВЕРСІЯ, 100% БЕЗ ПОМИЛОК
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -9,6 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { sql } from "../../db/client.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,25 +17,25 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS — працює всюди
+// ─── CORS ─────────────────────────
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://starway-studio.vercel.app',
-  'https://starway.pro'
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://starway-studio.vercel.app",
+  "https://starway.pro",
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, true); // поки що дозволяємо все
-    }
-  },
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      callback(null, true); // тимчасово дозволяємо все
+    },
+    credentials: true,
+  })
+);
 
+// ─── Middlewares ──────────────────
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -44,33 +44,33 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Статичні файли
-app.use(express.static(path.join(__dirname, '../public')));
-// Додай цей middleware ПЕРЕД усіма роутами!
+app.use(express.static(path.join(__dirname, "../public")));
+
+// ─── Помилка сервера ─────────────
 app.use((err, req, res, next) => {
   console.error("SERVER ERROR:", err);
   res.status(500).json({ error: "server_error", details: err.message });
 });
-// Middleware — авторизація
+
+// ─── Middleware авторизації ───────
 async function authRequired(req, res, next) {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer "))
     return res.status(401).json({ error: "unauthorized" });
-  }
 
   const token = authHeader.split(" ")[1];
-
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const [user] = await sql`SELECT id, email, name, role FROM users WHERE id = ${decoded.id}`;
     if (!user) return res.status(401).json({ error: "user_not_found" });
     req.user = user;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: "invalid_token" });
   }
 }
 
-// Реєстрація
+// ─── РЕЄСТРАЦІЯ ─────────────────
 app.post("/auth/register", async (req, res) => {
   const { email, password, name } = req.body;
   if (!email || !password) return res.status(400).json({ error: "missing_fields" });
@@ -90,11 +90,13 @@ app.post("/auth/register", async (req, res) => {
       RETURNING id, email, name, role
     `;
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
 
     res.status(201).json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role }
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
     });
   } catch (err) {
     console.error("REGISTER ERROR:", err.message);
@@ -102,32 +104,48 @@ app.post("/auth/register", async (req, res) => {
   }
 });
 
-// Логін
+// ─── ЛОГІН ───────────────────────
 app.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "missing_fields" });
 
   try {
     const [user] = await sql`
-      SELECT id, email, name, role, password_hash FROM users WHERE email = ${email}
+      SELECT id, email, name, role, password_hash
+      FROM users
+      WHERE email = ${email}
     `;
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (!user) {
       return res.status(401).json({ error: "invalid_credentials" });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    // Перевіряємо пароль
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "invalid_credentials" });
+    }
+
+    // Генеруємо JWT
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "30d" }
+    );
 
     res.json({
       token,
       user: { id: user.id, email: user.email, name: user.name, role: user.role }
     });
   } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    res.status(500).json({ error: "server_error" });
+    console.error("LOGIN ERROR:", err.message);
+    res.status(500).json({ error: "server_error", details: err.message });
   }
 });
 
+
+
+// ─── TELEGRAM AUTH ───────────────
 app.post("/auth/telegram", async (req, res) => {
   const { telegram_id, first_name, last_name, username } = req.body;
   if (!telegram_id) return res.status(400).json({ error: "missing_telegram_id" });
@@ -137,7 +155,6 @@ app.post("/auth/telegram", async (req, res) => {
 
     if (!user) {
       const name = [first_name, last_name].filter(Boolean).join(" ") || username || "Telegram User";
-
       [user] = await sql`
         INSERT INTO users (telegram_id, name, role)
         VALUES (${telegram_id}, ${name}, 'user')
@@ -145,11 +162,13 @@ app.post("/auth/telegram", async (req, res) => {
       `;
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, role: user.role, telegram_id }
+      user: { id: user.id, name: user.name, role: user.role, telegram_id },
     });
   } catch (err) {
     console.error("TELEGRAM AUTH ERROR:", err);
@@ -157,17 +176,17 @@ app.post("/auth/telegram", async (req, res) => {
   }
 });
 
-// Тест авторизації
+// ─── Тест авторизації
 app.get("/api/me", authRequired, (req, res) => {
   res.json({ user: req.user });
 });
 
-// Головна
+// ─── Головна
 app.get("/", (req, res) => {
   res.json({ message: "Starway Backend працює!", time: new Date().toISOString() });
 });
 
-// Запуск
+// ─── Запуск локально
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Starway Backend запущено на http://localhost:${PORT}`);
