@@ -45,7 +45,11 @@ if (process.env.NODE_ENV !== "production") {
 
 // Статичні файли
 app.use(express.static(path.join(__dirname, '../public')));
-
+// Додай цей middleware ПЕРЕД усіма роутами!
+app.use((err, req, res, next) => {
+  console.error("SERVER ERROR:", err);
+  res.status(500).json({ error: "server_error", details: err.message });
+});
 // Middleware — авторизація
 async function authRequired(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -81,8 +85,8 @@ app.post("/auth/register", async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
 
     const [user] = await sql`
-      INSERT INTO users (email, password_hash, name, role)
-      VALUES (${email}, ${hash}, ${name || email.split("@")[0]}, ${role})
+      INSERT INTO users (id, email, password_hash, name, role)
+      VALUES (${crypto.randomUUID()}, ${email}, ${hash}, ${name || email.split("@")[0]}, ${role})
       RETURNING id, email, name, role
     `;
 
@@ -93,8 +97,8 @@ app.post("/auth/register", async (req, res) => {
       user: { id: user.id, email: user.email, name: user.name, role: user.role }
     });
   } catch (err) {
-    console.error("REGISTER ERROR:", err);
-    res.status(500).json({ error: "server_error" });
+    console.error("REGISTER ERROR:", err.message);
+    res.status(500).json({ error: "server_error", details: err.message });
   }
 });
 
@@ -124,7 +128,6 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-// Telegram-авторизація
 app.post("/auth/telegram", async (req, res) => {
   const { telegram_id, first_name, last_name, username } = req.body;
   if (!telegram_id) return res.status(400).json({ error: "missing_telegram_id" });
