@@ -82,21 +82,20 @@ app.post("/auth/register", async (req, res) => {
     const [{ count }] = await sql`SELECT COUNT(*) as count FROM users`;
     const role = Number(count) === 0 ? "super_admin" : "user";
 
-    const hash = await bcrypt.hash(password, 10);
+    // Хешування паролю
+    const password_hash = await bcrypt.hash(password, 10);
 
     const [user] = await sql`
       INSERT INTO users (id, email, password_hash, name, role)
-      VALUES (${crypto.randomUUID()}, ${email}, ${hash}, ${name || email.split("@")[0]}, ${role})
+      VALUES (${crypto.randomUUID()}, ${email}, ${password_hash}, ${name || email.split("@")[0]}, ${role})
       RETURNING id, email, name, role
     `;
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: "30d",
-    });
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
     res.status(201).json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role }
     });
   } catch (err) {
     console.error("REGISTER ERROR:", err.message);
@@ -104,7 +103,7 @@ app.post("/auth/register", async (req, res) => {
   }
 });
 
-// ─── ЛОГІН ───────────────────────
+// --- ЛОГІН ---
 app.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "missing_fields" });
@@ -116,22 +115,12 @@ app.post("/auth/login", async (req, res) => {
       WHERE email = ${email}
     `;
 
-    if (!user) {
-      return res.status(401).json({ error: "invalid_credentials" });
-    }
+    if (!user) return res.status(401).json({ error: "invalid_credentials" });
 
-    // Перевіряємо пароль
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: "invalid_credentials" });
-    }
+    const passwordValid = await bcrypt.compare(password, user.password_hash);
+    if (!passwordValid) return res.status(401).json({ error: "invalid_credentials" });
 
-    // Генеруємо JWT
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "30d" }
-    );
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
     res.json({
       token,
@@ -142,7 +131,6 @@ app.post("/auth/login", async (req, res) => {
     res.status(500).json({ error: "server_error", details: err.message });
   }
 });
-
 
 
 // ─── TELEGRAM AUTH ───────────────
@@ -175,6 +163,36 @@ app.post("/auth/telegram", async (req, res) => {
     res.status(500).json({ error: "server_error" });
   }
 });
+
+// POST /auth/reset-password
+// Тіло запиту: { email: string, newPassword: string }
+app.post("/auth/reset-password", async (req, res) => {
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword) return res.status(400).json({ error: "missing_fields" });
+
+  try {
+    const [user] = await sql`SELECT id, email FROM users WHERE email = ${email}`;
+    if (!user) return res.status(404).json({ error: "user_not_found" });
+
+    const hash = await bcrypt.hash(newPassword, 10);
+
+    const [updatedUser] = await sql`
+      UPDATE users
+      SET password_hash = ${hash}, updated_at = NOW()
+      WHERE id = ${user.id}
+      RETURNING id, email, name, role
+    `;
+
+    res.json({
+      message: "Пароль успішно змінено",
+      user: { id: updatedUser.id, email: updatedUser.email, name: updatedUser.name, role: updatedUser.role }
+    });
+  } catch (err) {
+    console.error("RESET PASSWORD ERROR:", err.message);
+    res.status(500).json({ error: "server_error", details: err.message });
+  }
+});
+
 
 // ─── Тест авторизації
 app.get("/api/me", authRequired, (req, res) => {
