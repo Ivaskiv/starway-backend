@@ -1,17 +1,65 @@
 // routes/products.js
-import express from "express";
-import { getUserProducts } from "../models/products.js";
+import { Router } from "express";
+import { authRequired } from "../utils/auth-required.js";
+import { sql } from "../db/client.js"; 
 
-const router = express.Router();
+const router = Router();
 
-router.get("/", async (req, res) => {
+// POST /api/products — створення нового продукту
+router.post("/", authRequired, async (req, res) => {
+  const {
+    title,
+    price = 0,
+    description = "",
+    type = "course",
+    modules = [],
+    free = false,
+    trial = false,
+    upsell = true,
+  } = req.body;
+
+  if (!title || !type) {
+    return res.status(400).json({ error: "missing_fields" });
+  }
+
   try {
-    const userId = req.userId;
-    const products = await getUserProducts(userId);
-    res.json({ products });
+    const [product] = await sql`
+      INSERT INTO products (
+        title, price, description, type, modules,
+        free, trial, upsell, author_id, published
+      ) VALUES (
+        ${title},
+        ${Number(price)},
+        ${description},
+        ${type},
+        ${modules},
+        ${free},
+        ${trial},
+        ${upsell},
+        ${req.user.id},
+        true
+      )
+      RETURNING *
+    `;
+
+    res.status(201).json({
+      success: true,
+      product,
+    });
   } catch (err) {
-    console.error("Products error:", err);
-    res.status(500).json({ error: "server_error" });
+    console.error("PRODUCT CREATE ERROR:", err);
+    res.status(500).json({ error: "create_failed" });
+  }
+});
+
+// GET /api/products — список усіх продуктів
+router.get("/", authRequired, async (req, res) => {
+  try {
+    const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
+    res.json(products);
+  } catch (err) {
+    console.error("PRODUCTS LIST ERROR:", err);
+    res.status(500).json({ error: "fetch_failed" });
   }
 });
 

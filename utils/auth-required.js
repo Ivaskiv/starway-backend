@@ -1,8 +1,4 @@
 // utils/auth-required.js
-// ============================================
-// AUTH REQUIRED MIDDLEWARE
-// Призначення: Перевірка JWT токену для захищених routes
-// ============================================
 
 import jwt from "jsonwebtoken";
 import pg from "pg";

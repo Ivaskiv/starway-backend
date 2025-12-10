@@ -1,48 +1,51 @@
+// routes/products.js
+import { Router } from "express";
+import { authRequired } from "../utils/auth-required.js";
 import { sql } from "../db/client.js";
 
-export async function getAllProducts() {
-  return await sql`
-    SELECT *
-    FROM products
-    WHERE is_active = true
-    ORDER BY sort ASC, created_at DESC
-  `;
-}
+const router = Router();
 
-export async function getProductBySlug(slug) {
-  const rows = await sql`
-    SELECT * FROM products WHERE slug = ${slug} LIMIT 1
-  `;
-  return rows[0] || null;
-}
+router.post("/", authRequired, async (req, res) => {
+  const {
+    title,
+    price = 0,
+    description = "",
+    type = "course",
+    modules = [],
+    free = false,
+    trial = false,
+    upsell = true,
+  } = req.body;
 
-export async function getUserProducts(userId) {
-  return await sql`
-    SELECT
-      p.*,
-      -- enrollment?
-      CASE
-        WHEN e.status = 'active' THEN 'active'
-        WHEN p.type = 'free' THEN 'active'
-        ELSE 'locked'
-      END AS status,
+  if (!title) return res.status(400).json({ error: "title_required" });
 
-      -- progress placeholder
-      COALESCE(pr.progress, 0) AS progress
+  try {
+    const [product] = await sql`
+      INSERT INTO products (
+        title, price, description, type, modules,
+        free, trial, upsell, author_id, published
+      ) VALUES (
+        ${title}, ${Number(price)}, ${description}, ${type}, ${modules},
+        ${free}, ${trial}, ${upsell}, ${req.user.id}, true
+      )
+      RETURNING *
+    `;
 
-    FROM products p
-    LEFT JOIN enrollments e
-      ON e.product_id = p.id AND e.user_id = ${userId}
+    res.status(201).json({ success: true, product });
+  } catch (err) {
+    console.error("PRODUCT CREATE ERROR:", err);
+    res.status(500).json({ error: "create_failed" });
+  }
+});
 
-    LEFT JOIN (
-      SELECT product_id, ROUND(AVG(CASE WHEN completed THEN 100 ELSE 0 END)) as progress
-      FROM progress
-      WHERE user_id = ${userId}
-      GROUP BY product_id
-    ) pr
-      ON pr.product_id = p.id
+router.get("/", authRequired, async (req, res) => {
+  try {
+    const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
+    res.json(products);
+  } catch (err) {
+    console.error("PRODUCTS FETCH ERROR:", err);
+    res.status(500).json({ error: "fetch_failed" });
+  }
+});
 
-    WHERE p.is_active = true
-    ORDER BY p.sort ASC, p.created_at DESC
-  `;
-}
+export default router;
