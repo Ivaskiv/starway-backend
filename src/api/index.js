@@ -1,4 +1,4 @@
-// src/api/index.js — ОСТАТОЧНА ВЕРСІЯ, 100% ПРАЦЮЄ
+// src/api/index.js — З НОВИМИ ROUTES
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -10,10 +10,14 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sql } from "../../db/client.js";
 
+// Імпорт нових routes
+import integrationsRouter from "../../routes/integrations.js";
+import funnelsRouter from "../../routes/funnels.js";
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS — дозволяємо все (поки що)
+// CORS
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -95,13 +99,17 @@ app.get("/api/me", authRequired, (req, res) => {
   res.json({ user: req.user });
 });
 
+// НОВІ ROUTES
+app.use("/api/integrations", authRequired, integrationsRouter);
+app.use("/api/funnels", authRequired, funnelsRouter);
+
 app.get("/", (req, res) => {
   res.json({ message: "Starway Backend працює!" });
 });
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
-    console.log(`Backend на http://localhost:${PORT}`);
+    console.log(`✅ Backend на http://localhost:${PORT}`);
   });
 }
 
