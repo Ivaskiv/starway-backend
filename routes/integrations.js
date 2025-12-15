@@ -2,10 +2,11 @@
 import { Router } from "express";
 import { sql } from "../db/client.js";
 import { encrypt, decrypt } from "../helpers/crypto.js";
+import crypto from "crypto";
 
 const router = Router();
 
-// GET /api/integrations - отримати всі інтеграції
+// GET /api/integrations
 router.get("/", async (req, res) => {
   try {
     const integrations = await sql`
@@ -13,7 +14,6 @@ router.get("/", async (req, res) => {
       FROM user_integrations
       WHERE user_id = ${req.user.id}
     `;
-    
     res.json(integrations);
   } catch (err) {
     console.error(err);
@@ -21,17 +21,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST /api/integrations/telegram/connect - підключити Telegram бот
+// POST /api/integrations/telegram/connect
 router.post("/telegram/connect", async (req, res) => {
   try {
-    // Генеруємо унікальний bot username
     const botUsername = `${req.user.id.slice(0, 8)}_funnel_bot`;
-    
-    // В реальності тут буде виклик Telegram Bot API
-    // Зараз заглушка для тестування
     const botToken = `${Date.now()}:FAKE_TOKEN_${crypto.randomBytes(16).toString('hex')}`;
     
-    // Зберігаємо в БД
     await sql`
       INSERT INTO user_integrations (user_id, integration_type, connected, credentials, metadata)
       VALUES (
@@ -48,18 +43,14 @@ router.post("/telegram/connect", async (req, res) => {
         metadata = ${JSON.stringify({ botUsername, botLink: `https://t.me/${botUsername}` })}::jsonb
     `;
     
-    res.json({ 
-      success: true, 
-      botUsername,
-      botLink: `https://t.me/${botUsername}`
-    });
+    res.json({ success: true, botUsername, botLink: `https://t.me/${botUsername}` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "connection_failed" });
   }
 });
 
-// POST /api/integrations/wayforp/connect - підключити WayForPay
+// POST /api/integrations/wayforp/connect
 router.post("/wayforp/connect", async (req, res) => {
   const { merchantAccount, secretKey } = req.body;
   
@@ -74,19 +65,13 @@ router.post("/wayforp/connect", async (req, res) => {
         ${req.user.id},
         'wayforp',
         true,
-        ${JSON.stringify({ 
-          merchantAccount, 
-          secretKey: encrypt(secretKey) 
-        })}::jsonb,
+        ${JSON.stringify({ merchantAccount, secretKey: encrypt(secretKey) })}::jsonb,
         ${JSON.stringify({ merchantAccount })}::jsonb
       )
       ON CONFLICT (user_id, integration_type) 
       DO UPDATE SET 
         connected = true,
-        credentials = ${JSON.stringify({ 
-          merchantAccount, 
-          secretKey: encrypt(secretKey) 
-        })}::jsonb
+        credentials = ${JSON.stringify({ merchantAccount, secretKey: encrypt(secretKey) })}::jsonb
     `;
     
     res.json({ success: true });
@@ -96,7 +81,7 @@ router.post("/wayforp/connect", async (req, res) => {
   }
 });
 
-// POST /api/integrations/openai/connect - підключити OpenAI (тільки Enterprise)
+// POST /api/integrations/openai/connect
 router.post("/openai/connect", async (req, res) => {
   const { apiKey } = req.body;
   
@@ -105,13 +90,11 @@ router.post("/openai/connect", async (req, res) => {
   }
   
   try {
-    // Перевірка плану
     const [user] = await sql`SELECT plan FROM users WHERE id = ${req.user.id}`;
     if (user.plan !== 'enterprise') {
       return res.status(403).json({ error: "enterprise_only" });
     }
     
-    // Перевірка ключа через OpenAI API
     const testResponse = await fetch('https://api.openai.com/v1/models', {
       headers: { 'Authorization': `Bearer ${apiKey}` }
     });
@@ -142,14 +125,13 @@ router.post("/openai/connect", async (req, res) => {
   }
 });
 
-// POST /api/integrations/:type/disconnect - відключити інтеграцію
+// POST /api/integrations/:type/disconnect
 router.post("/:type/disconnect", async (req, res) => {
   try {
     await sql`
       DELETE FROM user_integrations 
       WHERE user_id = ${req.user.id} AND integration_type = ${req.params.type}
     `;
-    
     res.json({ success: true });
   } catch (err) {
     console.error(err);
